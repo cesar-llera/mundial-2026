@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador Predictivo Mundial 2026 — Informe Técnico</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap');
+
+  :root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --border: #30363d;
+    --green: #3fb950;
+    --green-dim: #238636;
+    --blue: #58a6ff;
+    --orange: #f0883e;
+    --red: #f85149;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --text-dim: #6e7681;
+    --gold: #d29922;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 0 40px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 30px,
+      rgba(48,54,61,0.3) 30px, rgba(48,54,61,0.3) 31px
+    ), repeating-linear-gradient(
+      90deg, transparent, transparent 30px,
+      rgba(48,54,61,0.3) 30px, rgba(48,54,61,0.3) 31px
+    );
+  }
+  .header-inner { position: relative; z-index: 1; }
+  .badge {
+    display: inline-block;
+    background: var(--green-dim);
+    color: var(--green);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid var(--green);
+    margin-bottom: 20px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  h1 {
+    font-size: 2.6rem;
+    font-weight: 700;
+    letter-spacing: -1px;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+  h1 span { color: var(--green); }
+  .subtitle {
+    color: var(--text-muted);
+    font-size: 1rem;
+    font-weight: 300;
+    max-width: 600px;
+    margin: 0 auto 30px;
+  }
+  .meta-row {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+  }
+  .meta-item {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .meta-item strong { color: var(--text-muted); }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 0 30px; }
+
+  .toc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 30px;
+    margin: 40px 0;
+  }
+  .toc h2 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 16px;
+  }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 6px 0; }
+  .toc a { color: var(--blue); text-decoration: none; font-size: 14px; }
+  .toc a:hover { text-decoration: underline; }
+
+  .stage {
+    margin: 60px 0;
+    border-left: 3px solid var(--green-dim);
+    padding-left: 30px;
+  }
+  .stage-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .stage-num {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    background: var(--green-dim);
+    color: var(--green);
+    padding: 3px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--green);
+    margin: 28px 0 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 12px;
+  }
+  p { margin-bottom: 14px; color: #c9d1d9; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 16px 0;
+  }
+  .card-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    margin: 16px 0;
+  }
+  th {
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+    color: #c9d1d9;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .code {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    color: #a5d6ff;
+    margin: 14px 0;
+    overflow-x: auto;
+    line-height: 1.6;
+  }
+  .code .comment { color: var(--text-dim); }
+  .code .keyword { color: #ff7b72; }
+  .code .string { color: #a5d6ff; }
+  .code .num { color: #79c0ff; }
+
+  .warning {
+    background: rgba(240,136,62,0.1);
+    border: 1px solid rgba(240,136,62,0.4);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin: 14px 0;
+    font-size: 13.5px;
+  }
+  .warning::before { content: '⚠ '; color: var(--orange); font-weight: bold; }
+
+  .insight {
+    background: rgba(63,185,80,0.08);
+    border: 1px solid rgba(63,185,80,0.3);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin: 14px 0;
+    font-size: 13.5px;
+  }
+  .insight::before { content: '✓ '; color: var(--green); font-weight: bold; }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 14px;
+    margin: 16px 0;
+  }
+  .metric-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .metric-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--green);
+    display: block;
+  }
+  .metric-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+  }
+
+  /* Results table */
+  .results-table { margin: 30px 0; }
+  .bar-cell { display: flex; align-items: center; gap: 10px; }
+  .bar-bg { flex: 1; background: var(--surface2); border-radius: 3px; height: 6px; }
+  .bar-fill { height: 6px; border-radius: 3px; background: var(--green); }
+  .pct { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-muted); min-width: 40px; text-align: right; }
+
+  .rank { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-dim); }
+  .team-name { font-weight: 600; }
+  .group-badge {
+    display: inline-block;
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  .elo-val { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-muted); }
+
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 0;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-top: 80px;
+  }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="badge">Informe Técnico · v1.0</div>
+    <h1>Simulador Predictivo<br><span>Mundial 2026</span></h1>
+    <p class="subtitle">Documentación completa del sistema: datos, modelos, supuestos, decisiones y resultados de las 10.000 simulaciones Monte Carlo.</p>
+    <div class="meta-row">
+      <span class="meta-item"><strong>Stack:</strong> Python · pandas · statsmodels · scikit-learn</span>
+      <span class="meta-item"><strong>Simulaciones:</strong> 10.000</span>
+      <span class="meta-item"><strong>Equipos:</strong> 48</span>
+      <span class="meta-item"><strong>Autor:</strong> César</span>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="toc">
+    <h2>Índice</h2>
+    <ol>
+      <li><a href="#etapa1">Etapa 1 — Datos y sistema Elo</a></li>
+      <li><a href="#etapa2">Etapa 2 — Features y modelo de resultados</a></li>
+      <li><a href="#etapa3">Etapa 3 — Modelo de goles (Poisson)</a></li>
+      <li><a href="#etapa4">Etapa 4 — Simulación Monte Carlo</a></li>
+      <li><a href="#resultados">Resultados: probabilidades por ronda</a></li>
+      <li><a href="#supuestos">Supuestos débiles y próximos pasos</a></li>
+    </ol>
+  </div>
+
+  <!-- ETAPA 1 -->
+  <div class="stage" id="etapa1">
+    <div class="stage-header">
+      <span class="stage-num">NOTEBOOK 01</span>
+      <h2>Datos y sistema Elo</h2>
+    </div>
+
+    <h3>Fuente de datos</h3>
+    <p>Dataset de Kaggle (<code>martj42/international-football-results-from-1872-to-2017</code>), actualizado hasta 2026. Contiene 49.287 partidos, incluyendo los 72 del fixture del Mundial 2026 sin resultado aún.</p>
+
+    <h3>Decisión: ventana temporal 2010–2026</h3>
+    <p>Se descartan partidos anteriores a 2010 por tres razones: el fútbol pre-2010 es un proceso distinto (tácticas, nivel físico, globalización); el Elo captura el historial previo en un solo número; y la estacionariedad dentro de la ventana fue verificada (goles promedio oscilan entre 1.4 y 1.7 sin tendencia sistemática).</p>
+
+    <div class="metric-grid">
+      <div class="metric-box"><span class="metric-val">15.632</span><span class="metric-label">Partidos de entrenamiento</span></div>
+      <div class="metric-box"><span class="metric-val">333</span><span class="metric-label">Selecciones con Elo</span></div>
+      <div class="metric-box"><span class="metric-val">72</span><span class="metric-label">Partidos del fixture</span></div>
+      <div class="metric-box"><span class="metric-val">100</span><span class="metric-label">Torneos distintos</span></div>
+    </div>
+
+    <h3>Sistema Elo propio</h3>
+
+    <div class="card">
+      <div class="card-title">¿Qué es el Elo y para qué sirve?</div>
+      <p style="margin-bottom:10px">El <strong style="color:var(--text)">Elo</strong> es un sistema de rating numérico que mide el nivel relativo de cada selección en un momento dado. Fue inventado por el físico Arpad Elo para el ajedrez y adoptado ampliamente en deportes competitivos. La idea central es simple: <em>cada equipo tiene un número que sube cuando gana y baja cuando pierde, pero el cambio depende de qué tan sorpresivo fue el resultado</em>.</p>
+      <p style="margin-bottom:10px">Si España (Elo 2100) le gana a Curazao (Elo 1550), el cambio es mínimo — era esperado. Si Curazao le gana a España, el cambio es grande para ambos — fue una sorpresa.</p>
+      <p style="margin-bottom:10px"><strong style="color:var(--text)">Por qué lo usamos:</strong> es la señal más estable disponible para fútbol internacional. Resume años de historia en un solo número, actualiza automáticamente según resultados y tiene alto poder predictivo demostrado. Con diferencia de Elo mayor a 300 puntos, el favorito gana entre 80% y 88% de los partidos en nuestros datos.</p>
+      <p style="margin-bottom:0"><strong style="color:var(--text)">Por qué lo calculamos nosotros</strong> en lugar de usar eloratings.net u otras fuentes: control total sobre parámetros (valor inicial, factor K), cobertura perfecta de todos los equipos y aprendizaje directo del proceso.</p>
+    </div>
+
+    <p>El Elo se actualiza partido a partido en orden cronológico estricto, garantizando que al momento de cada partido se usa solo información pasada (no hay data leakage).</p>
+
+    <div class="card">
+      <div class="card-title">Fórmula de actualización</div>
+      <div class="code">nuevo_elo = elo_actual + K × (resultado_real − resultado_esperado)
+resultado_esperado = 1 / (1 + 10^((elo_rival − elo_equipo) / 400))</div>
+    </div>
+
+    <h3>Factor K — ¿qué controla y por qué importa?</h3>
+
+    <div class="card">
+      <div class="card-title">¿Qué es el factor K?</div>
+      <p style="margin-bottom:10px">El factor K es el <strong style="color:var(--text)">amplificador del impacto de cada partido sobre el rating</strong>. Determina cuántos puntos Elo se transfieren entre equipos como consecuencia de un resultado.</p>
+      <p style="margin-bottom:10px">Con K alto, el sistema es <em>reactivo</em>: un resultado sorpresivo cambia mucho el rating de inmediato. Con K bajo, el sistema es <em>estable</em>: requiere muchos resultados para mover el rating significativamente.</p>
+      <p style="margin-bottom:0"><strong style="color:var(--text)">Por qué lo variamos según el torneo:</strong> no todos los partidos tienen el mismo valor informativo. Un amistoso de preparación dice poco sobre el nivel real de un equipo (los técnicos rotan, no hay presión). Un partido de Mundial concentra el máximo esfuerzo y rivalidad. Usar K uniforme trataría igual a ambos, lo que contamina el rating con señal débil.</p>
+    </div>
+    <table>
+      <thead><tr><th>Tipo de partido</th><th>Peso</th><th>Factor K</th><th>Razonamiento</th></tr></thead>
+      <tbody>
+        <tr><td>Amistosos</td><td>1</td><td>20</td><td>Poco valor informativo</td></tr>
+        <tr><td>Torneos regionales menores</td><td>2</td><td>30</td><td>Competencia débil</td></tr>
+        <tr><td>Resto</td><td>3</td><td>40</td><td>Valor intermedio</td></tr>
+        <tr><td>Clasificatorias y copas</td><td>4</td><td>50</td><td>Alta competitividad</td></tr>
+        <tr><td>Mundial FIFA</td><td>5</td><td>60</td><td>Máxima importancia</td></tr>
+      </tbody>
+    </table>
+
+    <div class="warning">Error encontrado y corregido: Copa América figuraba en peso 3 por un problema de encoding con la tilde en el nombre. Se corrigió normalizando caracteres antes de comparar strings. Este tipo de error es silencioso: el código corre sin advertencias pero clasifica mal durante todo el entrenamiento.</div>
+
+    <h3>Hallazgos de la exploración</h3>
+    <table>
+      <thead><tr><th>Variable</th><th>Valor</th><th>Implicancia</th></tr></thead>
+      <tbody>
+        <tr><td>Goles promedio (local)</td><td>1.60</td><td>Confirma distribución Poisson</td></tr>
+        <tr><td>Goles promedio (visitante)</td><td>1.12</td><td>Ventaja de localía real y medible</td></tr>
+        <tr><td>Victoria local (cancha real)</td><td>50.6%</td><td>Localía vale ~50-100 puntos Elo</td></tr>
+        <tr><td>Victoria local (cancha neutral)</td><td>41.1%</td><td>Sin localía, equipos más parejo</td></tr>
+        <tr><td>Partidos 0-0</td><td>8.8%</td><td>Cero inflado — limitación de Poisson</td></tr>
+      </tbody>
+    </table>
+
+    <div class="insight">Con diferencia Elo superior a 300 puntos, el favorito gana entre el 80% y el 88% de los partidos. Confirma que el Elo es una feature sólida para modelar.</div>
+  </div>
+
+  <hr>
+
+  <!-- ETAPA 2 -->
+  <div class="stage" id="etapa2">
+    <div class="stage-header">
+      <span class="stage-num">NOTEBOOK 02</span>
+      <h2>Features y modelo de resultados</h2>
+    </div>
+
+    <h3>¿Por qué features adicionales sobre el Elo?</h3>
+    <p>El Elo captura nivel acumulado pero tiene dos limitaciones: no captura momentum (una racha de 5 victorias vs 5 victorias irregulares producen el mismo Elo) y no captura margen de victoria (un 7-0 y un 1-0 actualizan el Elo igual).</p>
+
+    <table>
+      <thead><tr><th>Feature</th><th>Qué captura</th><th>Qué no captura el Elo</th></tr></thead>
+      <tbody>
+        <tr><td>diff_elo</td><td>Nivel relativo entre equipos</td><td>Feature base</td></tr>
+        <tr><td>localia</td><td>Ventaja real de jugar en casa</td><td>Cancha neutral vs no neutral</td></tr>
+        <tr><td>diff_puntos_recientes</td><td>Momentum (últimos 5 partidos)</td><td>Tendencia, no solo nivel</td></tr>
+        <tr><td>diff_goles_anotados</td><td>Potencial ofensivo reciente</td><td>Margen de victoria</td></tr>
+        <tr><td>diff_goles_recibidos</td><td>Solidez defensiva reciente</td><td>Margen de derrota</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Decisión crítica: split temporal</h3>
+    <p>Entrenamiento: 2010–2022 (11.950 partidos). Evaluación: 2023–2026 (3.442 partidos). No se usa validación cruzada aleatoria porque el tiempo tiene dirección: mezclar fechas produce métricas artificialmente buenas (data leakage).</p>
+
+    <h3>Modelo elegido: Regresión Logística Multinomial</h3>
+    <p>Produce probabilidades directamente para 3 clases (Local / Empate / Visitante). Es interpretable, robusto con datasets de tamaño moderado y difícil de superar con features débiles. Random Forest o XGBoost requieren más datos y features para justificar su complejidad adicional.</p>
+
+    <h3>Métricas de evaluación — Log-Loss y Brier Score</h3>
+
+    <div class="card">
+      <div class="card-title">¿Por qué no usamos accuracy?</div>
+      <p style="margin-bottom:10px">La <em>accuracy</em> (porcentaje de resultados acertados) parece intuitiva pero es una métrica pobre para modelos probabilísticos. Un modelo que siempre predice "gana el favorito" puede tener buena accuracy pero ser inútil: no te dice nada sobre la incertidumbre ni sobre cuán confiado debería estar en cada caso.</p>
+      <p style="margin-bottom:0">Nosotros queremos saber si las <strong style="color:var(--text)">probabilidades están bien calibradas</strong>: cuando el modelo dice 30%, ¿ocurre el evento cerca del 30% de las veces? Eso se mide con log-loss y Brier score.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Log-Loss — penaliza la confianza equivocada</div>
+      <p style="margin-bottom:10px">El <strong style="color:var(--text)">log-loss</strong> mide cuánto castiga el modelo a sí mismo por sus predicciones erróneas. La fórmula usa logaritmos, lo que genera una penalización que <em>crece exponencialmente</em> cuando el modelo está muy seguro de algo que no ocurrió.</p>
+      <p style="margin-bottom:10px">Ejemplo: si el modelo dice "Argentina tiene 95% de chances de ganar" y Argentina pierde, el log-loss es altísimo. Si dice "Argentina tiene 55% de chances" y pierde, el log-loss es bajo.</p>
+      <p style="margin-bottom:0"><strong style="color:var(--text)">Rango:</strong> 0 = predicción perfecta. Sin cota superior, pero un modelo que siempre predice la distribución base tiene log-loss ≈ 1.22 en nuestros datos. Nuestro modelo logró 0.867 — una mejora real y grande.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Brier Score — error cuadrático de probabilidades</div>
+      <p style="margin-bottom:10px">El <strong style="color:var(--text)">Brier Score</strong> es el equivalente al error cuadrático medio (MSE) pero aplicado a probabilidades. Mide la diferencia al cuadrado entre la probabilidad predicha y el resultado real (0 o 1).</p>
+      <p style="margin-bottom:10px">Es más intuitivo que el log-loss: si el modelo predice 0.7 de probabilidad de victoria y el equipo ganó, el error es (0.7 - 1)² = 0.09. Si predijo 0.3 y el equipo ganó, el error es (0.3 - 1)² = 0.49.</p>
+      <p style="margin-bottom:0"><strong style="color:var(--text)">Rango:</strong> 0 = predicción perfecta, 1 = peor posible. Un modelo que siempre predice 0.5 tiene Brier ≈ 0.25. Nuestro modelo logró 0.170 — bien por debajo del naive.</p>
+    </div>
+
+    <h3>Resultados</h3>
+    <table>
+      <thead><tr><th>Modelo</th><th>Log-Loss</th><th>Brier Score</th></tr></thead>
+      <tbody>
+        <tr><td>Naive (distribución base)</td><td>1.2233</td><td>0.2500</td></tr>
+        <tr><td>Baseline (Elo + Localía)</td><td>0.8732</td><td>0.1715</td></tr>
+        <tr><td>Completo (+ Forma reciente)</td><td>0.8670</td><td>0.1701</td></tr>
+      </tbody>
+    </table>
+
+    <div class="insight">El Elo reduce el log-loss en 0.3563 respecto al naive — es la feature más importante. La forma reciente agrega 0.0062 adicionales: mejora real y consistente en ambas métricas, aunque de magnitud modesta.</div>
+
+    <div class="warning">Supuesto débil: la mejora de la forma reciente es pequeña y podría no ser reproducible en todos los períodos. En V2 se puede explorar con ventanas de N distinto (3, 7, 10 partidos) para verificar estabilidad.</div>
+  </div>
+
+  <hr>
+
+  <!-- ETAPA 3 -->
+  <div class="stage" id="etapa3">
+    <div class="stage-header">
+      <span class="stage-num">NOTEBOOK 03</span>
+      <h2>Modelo de goles (Poisson)</h2>
+    </div>
+
+    <h3>¿Por qué un modelo separado de goles?</h3>
+    <p>El modelo de resultados predice victoria/empate/derrota pero no dice nada sobre el marcador. Para simular el torneo se necesitan marcadores concretos: un 1-0 y un 3-2 son ambas victorias locales pero tienen implicancias distintas en diferencia de goles para la fase de grupos.</p>
+
+    <h3>¿Por qué distribución de Poisson?</h3>
+
+    <div class="card">
+      <div class="card-title">¿Qué es la distribución de Poisson y qué mide?</div>
+      <p style="margin-bottom:10px">La distribución de Poisson modela la probabilidad de que ocurra un número determinado de eventos en un intervalo de tiempo, dado que los eventos son independientes entre sí y tienen una tasa promedio de ocurrencia (λ, lambda).</p>
+      <p style="margin-bottom:10px">En fútbol, los <em>goles son exactamente eso</em>: eventos discretos (0, 1, 2, 3…), nunca negativos, que ocurren a una tasa promedio que depende de los equipos. El promedio de goles en nuestros datos es <strong style="color:var(--green)">1.36 goles por equipo por partido</strong> — y la distribución empírica tiene exactamente la forma de una Poisson con λ ≈ 1.36.</p>
+      <p style="margin-bottom:10px"><strong style="color:var(--text)">Por qué no regresión lineal:</strong> la regresión lineal no sabe que los goles no pueden ser negativos. Podría predecir -0.3 goles para un equipo muy débil, lo cual no tiene sentido. La Poisson está diseñada para conteos.</p>
+      <p style="margin-bottom:0"><strong style="color:var(--text)">Cómo la usamos:</strong> el modelo estima un lambda para cada equipo en cada partido. Luego sampleamos los goles reales de una distribución Poisson(λ). Esto inyecta aleatoriedad realista: con λ=1.4, a veces sale 0, a veces 1, a veces 3 — tal como en la realidad.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Fórmula del modelo</div>
+      <div class="code">λ = e^(β₀ + β₁×elo_equipo + β₂×elo_rival + β₃×es_local)
+
+<span class="comment"># Coeficientes obtenidos (Elo normalizado /1000):</span>
+elo_equipo: +2.013  <span class="comment"># mayor Elo propio → más goles</span>
+elo_rival:  -2.279  <span class="comment"># mayor Elo rival → menos goles</span>
+es_local:   +0.249  <span class="comment"># local anota 28% más que visitante</span></div>
+    </div>
+
+    <h3>Evaluación</h3>
+    <table>
+      <thead><tr><th>Métrica</th><th>Valor</th><th>Interpretación</th></tr></thead>
+      <tbody>
+        <tr><td>MAE en evaluación</td><td>0.9621 goles</td><td>Error promedio por equipo por partido</td></tr>
+        <tr><td>Media real</td><td>1.3862 goles</td><td>—</td></tr>
+        <tr><td>Media predicha</td><td>1.3990 goles</td><td>Sin sesgo sistemático</td></tr>
+      </tbody>
+    </table>
+
+    <div class="insight">El modelo reproduce bien la distribución real de goles: las frecuencias simuladas con Poisson son casi idénticas a las reales para valores de 0 a 7 goles. No hay sesgo sistemático de sobreestimación ni subestimación.</div>
+
+    <div class="warning">Limitación conocida: el modelo independiente de Poisson subestima levemente los ceros y sobreestima los unos. En V2 se puede explorar el modelo Dixon-Coles, que agrega un término de correlación para corregir este sesgo en resultados ajustados (0-0, 1-0, 0-1, 1-1).</div>
+  </div>
+
+  <hr>
+
+  <!-- ETAPA 4 -->
+  <div class="stage" id="etapa4">
+    <div class="stage-header">
+      <span class="stage-num">NOTEBOOK 04</span>
+      <h2>Simulación Monte Carlo del torneo</h2>
+    </div>
+
+    <h3>¿Qué es la simulación Monte Carlo?</h3>
+
+    <div class="card">
+      <div class="card-title">Monte Carlo — repetición masiva de escenarios aleatorios</div>
+      <p style="margin-bottom:10px">La simulación Monte Carlo es una técnica que resuelve problemas complejos <strong style="color:var(--text)">repitiendo un experimento aleatorio miles de veces</strong> y observando la distribución de resultados. El nombre viene del casino de Montecarlo, símbolo del azar.</p>
+      <p style="margin-bottom:10px">El fútbol es un sistema demasiado complejo para resolver analíticamente: hay 48 equipos, 12 grupos, miles de posibles brackets eliminatorios, y cada partido tiene tres resultados posibles. Es imposible calcular directamente "¿cuál es la probabilidad de que Argentina y España se enfrenten en semis?".</p>
+      <p style="margin-bottom:10px"><strong style="color:var(--text)">La solución Monte Carlo:</strong> en lugar de calcular, <em>simulamos</em>. Corremos el torneo completo 10.000 veces. En cada simulación, cada partido se resuelve sampleando un resultado aleatorio según las probabilidades del modelo. Al final, contamos frecuencias: si Argentina ganó el torneo en 1.187 de las 10.000 simulaciones, su probabilidad estimada es 11.87%.</p>
+      <p style="margin-bottom:0"><strong style="color:var(--text)">¿Por qué 10.000?</strong> Con pocas simulaciones (100), las estimaciones son ruidosas. Con 10.000, la varianza es lo suficientemente baja como para que las diferencias de 1-2% entre equipos sean estadísticamente estables. Para este nivel de precisión, 10.000 es el punto de equilibrio entre calidad y tiempo de cómputo.</p>
+    </div>
+
+    <h3>Estructura del torneo simulado</h3>
+    <table>
+      <thead><tr><th>Fase</th><th>Detalle</th></tr></thead>
+      <tbody>
+        <tr><td>Grupos</td><td>12 grupos de 4 equipos · 6 partidos por grupo · 72 partidos totales</td></tr>
+        <tr><td>Clasificación</td><td>2 primeros de cada grupo (24) + 8 mejores terceros = 32 clasificados</td></tr>
+        <tr><td>Dieciseisavos</td><td>32 equipos · bracket aleatorio</td></tr>
+        <tr><td>Octavos → Final</td><td>4 rondas eliminatorias adicionales</td></tr>
+        <tr><td>Empates</td><td>Penales 50/50 en toda la fase eliminatoria</td></tr>
+        <tr><td>Simulaciones</td><td>10.000 torneos completos</td></tr>
+      </tbody>
+    </table>
+
+    <h3>¿Qué significan los números?</h3>
+    <p>Las probabilidades <strong>no son predicciones</strong>: son frecuencias relativas sobre 10.000 escenarios posibles. España con 19.7% significa que ganó en 1.970 de 10.000 simulaciones. El sistema produce una distribución de incertidumbre, no un ganador.</p>
+
+    <h3>Supuestos del módulo de simulación</h3>
+    <table>
+      <thead><tr><th>Supuesto</th><th>Efecto esperado</th><th>Impacto estimado</th></tr></thead>
+      <tbody>
+        <tr><td>Solo Elo como feature</td><td>Ignora forma reciente, lesiones, bajas</td><td>Moderado</td></tr>
+        <tr><td>Penales = 50/50</td><td>Subestima diferencias reales en definiciones</td><td>Bajo (pocas llaves llegan)</td></tr>
+        <tr><td>Bracket aleatorio</td><td>Sorteo real tiene restricciones geográficas</td><td>Moderado</td></tr>
+        <tr><td>Elo estático durante torneo</td><td>No refleja confianza/caída dentro del torneo</td><td>Bajo</td></tr>
+        <tr><td>Goles independientes</td><td>Ignora comportamiento táctico post-gol</td><td>Bajo</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr>
+
+  <!-- RESULTADOS -->
+  <div class="stage" id="resultados">
+    <div class="stage-header">
+      <span class="stage-num">RESULTADOS</span>
+      <h2>Probabilidades por ronda — 48 equipos</h2>
+    </div>
+
+    <p style="color:var(--text-muted); margin-bottom: 20px; font-size:13px;">Ordenados por probabilidad de campeón. Todas las columnas son porcentajes (%). Elo redondeado a entero.</p>
+
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>#</th><th>Equipo</th><th>Grupo</th><th>Elo</th>
+          <th>16avos</th><th>Octavos</th><th>Cuartos</th><th>Semis</th><th>Final</th><th>Campeón</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="rank">1</td><td class="team-name">Spain</td><td><span class="group-badge">H</span></td><td class="elo-val">2111</td><td>99.2</td><td>76.0</td><td>56.4</td><td>40.7</td><td>28.5</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:100%"></div></div><span class="pct">19.7%</span></div></td></tr>
+        <tr><td class="rank">2</td><td class="team-name">Argentina</td><td><span class="group-badge">J</span></td><td class="elo-val">2053</td><td>96.3</td><td>67.7</td><td>45.4</td><td>30.2</td><td>18.7</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:60%"></div></div><span class="pct">11.9%</span></div></td></tr>
+        <tr><td class="rank">3</td><td class="team-name">France</td><td><span class="group-badge">I</span></td><td class="elo-val">2033</td><td>93.5</td><td>63.6</td><td>41.8</td><td>26.1</td><td>16.2</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:48%"></div></div><span class="pct">9.4%</span></div></td></tr>
+        <tr><td class="rank">4</td><td class="team-name">England</td><td><span class="group-badge">L</span></td><td class="elo-val">1985</td><td>95.5</td><td>60.4</td><td>36.6</td><td>21.9</td><td>12.1</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:34%"></div></div><span class="pct">6.6%</span></div></td></tr>
+        <tr><td class="rank">5</td><td class="team-name">Portugal</td><td><span class="group-badge">K</span></td><td class="elo-val">1955</td><td>88.0</td><td>52.7</td><td>30.2</td><td>16.6</td><td>8.6</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:23%"></div></div><span class="pct">4.5%</span></div></td></tr>
+        <tr><td class="rank">6</td><td class="team-name">Morocco</td><td><span class="group-badge">C</span></td><td class="elo-val">1945</td><td>91.4</td><td>54.1</td><td>30.7</td><td>16.6</td><td>8.6</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:21%"></div></div><span class="pct">4.1%</span></div></td></tr>
+        <tr><td class="rank">7</td><td class="team-name">Germany</td><td><span class="group-badge">E</span></td><td class="elo-val">1943</td><td>94.7</td><td>55.6</td><td>31.2</td><td>16.6</td><td>8.2</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:20%"></div></div><span class="pct">3.9%</span></div></td></tr>
+        <tr><td class="rank">8</td><td class="team-name">Netherlands</td><td><span class="group-badge">F</span></td><td class="elo-val">1940</td><td>90.0</td><td>52.5</td><td>29.5</td><td>15.4</td><td>7.7</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:18%"></div></div><span class="pct">3.6%</span></div></td></tr>
+        <tr><td class="rank">9</td><td class="team-name">Ecuador</td><td><span class="group-badge">E</span></td><td class="elo-val">1931</td><td>93.0</td><td>53.6</td><td>29.5</td><td>15.1</td><td>7.6</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:18%"></div></div><span class="pct">3.5%</span></div></td></tr>
+        <tr><td class="rank">10</td><td class="team-name">Japan</td><td><span class="group-badge">F</span></td><td class="elo-val">1934</td><td>89.9</td><td>52.9</td><td>29.4</td><td>15.7</td><td>7.6</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:18%"></div></div><span class="pct">3.5%</span></div></td></tr>
+        <tr><td class="rank">11</td><td class="team-name">Brazil</td><td><span class="group-badge">C</span></td><td class="elo-val">1926</td><td>88.9</td><td>50.4</td><td>27.3</td><td>13.6</td><td>6.5</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:15%"></div></div><span class="pct">2.9%</span></div></td></tr>
+        <tr><td class="rank">12</td><td class="team-name">Colombia</td><td><span class="group-badge">K</span></td><td class="elo-val">1926</td><td>84.7</td><td>47.4</td><td>25.6</td><td>12.8</td><td>6.4</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:14%"></div></div><span class="pct">2.8%</span></div></td></tr>
+        <tr><td class="rank">13</td><td class="team-name">Croatia</td><td><span class="group-badge">L</span></td><td class="elo-val">1908</td><td>89.2</td><td>48.7</td><td>24.7</td><td>12.2</td><td>5.8</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:13%"></div></div><span class="pct">2.5%</span></div></td></tr>
+        <tr><td class="rank">14</td><td class="team-name">Mexico</td><td><span class="group-badge">A</span></td><td class="elo-val">1902</td><td>95.9</td><td>52.3</td><td>26.0</td><td>12.5</td><td>5.6</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:12%"></div></div><span class="pct">2.4%</span></div></td></tr>
+        <tr><td class="rank">15</td><td class="team-name">Turkey</td><td><span class="group-badge">D</span></td><td class="elo-val">1912</td><td>69.3</td><td>38.1</td><td>20.1</td><td>9.9</td><td>4.4</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:10%"></div></div><span class="pct">2.0%</span></div></td></tr>
+        <tr><td class="rank">16</td><td class="team-name">Norway</td><td><span class="group-badge">I</span></td><td class="elo-val">1888</td><td>73.3</td><td>38.9</td><td>19.6</td><td>9.3</td><td>4.1</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:9%"></div></div><span class="pct">1.8%</span></div></td></tr>
+        <tr><td class="rank">17</td><td class="team-name">Uruguay</td><td><span class="group-badge">H</span></td><td class="elo-val">1877</td><td>86.2</td><td>44.7</td><td>22.1</td><td>9.7</td><td>4.2</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:9%"></div></div><span class="pct">1.8%</span></div></td></tr>
+        <tr><td class="rank">18</td><td class="team-name">Switzerland</td><td><span class="group-badge">B</span></td><td class="elo-val">1858</td><td>94.3</td><td>46.2</td><td>21.6</td><td>9.9</td><td>4.1</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:8%"></div></div><span class="pct">1.7%</span></div></td></tr>
+        <tr><td class="rank">19</td><td class="team-name">Australia</td><td><span class="group-badge">D</span></td><td class="elo-val">1865</td><td>64.7</td><td>31.6</td><td>14.7</td><td>6.7</td><td>3.0</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:6%"></div></div><span class="pct">1.2%</span></div></td></tr>
+        <tr><td class="rank">20</td><td class="team-name">Belgium</td><td><span class="group-badge">G</span></td><td class="elo-val">1838</td><td>81.8</td><td>38.5</td><td>16.4</td><td>6.8</td><td>2.7</td><td><div class="bar-cell"><div class="bar-bg"><div class="bar-fill" style="width:5%"></div></div><span class="pct">1.1%</span></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <hr>
+
+  <!-- SUPUESTOS -->
+  <div class="stage" id="supuestos">
+    <div class="stage-header">
+      <span class="stage-num">ANÁLISIS CRÍTICO</span>
+      <h2>Supuestos débiles y próximos pasos</h2>
+    </div>
+
+    <h3>Los 5 supuestos más importantes a revisar</h3>
+    <table>
+      <thead><tr><th>Supuesto</th><th>Problema</th><th>Solución en V2</th></tr></thead>
+      <tbody>
+        <tr><td>Elo estático durante el torneo</td><td>Un equipo que gana 5-0 no mejora su rating para la siguiente ronda</td><td>Actualizar Elo entre partidos simulados</td></tr>
+        <tr><td>Penales 50/50</td><td>Históricamente hay equipos mejores pateando penales</td><td>Modelar con datos históricos de penales por selección</td></tr>
+        <tr><td>Bracket aleatorio</td><td>El sorteo real tiene restricciones geográficas y de grupo</td><td>Implementar las reglas oficiales del sorteo FIFA</td></tr>
+        <tr><td>Goles independientes</td><td>Ignora comportamiento táctico post-gol</td><td>Modelo Dixon-Coles con correlación de goles</td></tr>
+        <tr><td>Sin datos de lesiones/bajas</td><td>Un torneo sin Mbappé es diferente al modelo</td><td>Ajuste manual pre-torneo de Elo por ausencias</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Próximos pasos del proyecto</h3>
+    <table>
+      <thead><tr><th>Etapa</th><th>Qué hacer</th><th>Cuándo</th></tr></thead>
+      <tbody>
+        <tr><td>Notebook 05</td><td>Incorporar resultados reales partido a partido y recalcular probabilidades</td><td>Durante el torneo (junio-julio 2026)</td></tr>
+        <tr><td>Evaluación</td><td>Calcular log-loss y Brier score acumulados para medir calibración real</td><td>Post-torneo</td></tr>
+        <tr><td>V2 del modelo</td><td>Explorar Dixon-Coles, Elo dinámico, features de selección de planteles</td><td>Post-evaluación</td></tr>
+      </tbody>
+    </table>
+
+    <div class="insight">El criterio de éxito de este proyecto no es adivinar el campeón. Es producir probabilidades calibradas: cuando el modelo dice 20%, el evento debe ocurrir cerca del 20% de las veces. Eso se mide con log-loss y Brier score, no con accuracy.</div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <div class="container">
+    Simulador Predictivo del Mundial 2026 · Informe Técnico v1.0<br>
+    Python · pandas · statsmodels · scikit-learn · 10.000 simulaciones Monte Carlo
+  </div>
+</div>
+
+</body>
+</html>
