@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>World Cup 2026 Fixture — Simulation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;600;700&family=Barlow:wght@300;400;600&display=swap');
+
+  :root {
+    --bg: #0c0e10;
+    --card: #13161a;
+    --card2: #1a1e24;
+    --border: #2a2e35;
+    --green: #00d084;
+    --gold: #f5c518;
+    --blue: #4fa8e8;
+    --red: #e85454;
+    --text: #eef0f3;
+    --muted: #707880;
+    --dim: #3a3e45;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Barlow', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+  }
+
+  /* HEADER */
+  .header {
+    background: linear-gradient(180deg, #0c0e10 0%, #111518 100%);
+    border-bottom: 2px solid var(--green);
+    padding: 30px 24px 24px;
+    text-align: center;
+  }
+  .header-eyebrow {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 8px;
+  }
+  .header h1 {
+    font-family: 'Bebas Neue', cursive;
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    letter-spacing: 3px;
+    line-height: 0.9;
+    margin-bottom: 10px;
+  }
+  .header h1 span { color: var(--gold); }
+  .header-sub {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 1px;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 14px 20px;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--green); border-bottom-color: var(--green); }
+
+  /* PANELS */
+  .panel { display: none; padding: 24px; }
+  .panel.active { display: block; }
+
+  /* GROUPS */
+  .groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .group-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .group-header {
+    background: var(--card2);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+  .group-letter {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 1.6rem;
+    color: var(--green);
+    letter-spacing: 1px;
+  }
+  .group-badge {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .group-table { width: 100%; }
+  .group-row {
+    display: grid;
+    grid-template-columns: 24px 1fr 36px 36px 36px 50px;
+    align-items: center;
+    padding: 9px 16px;
+    border-bottom: 1px solid rgba(42,46,53,0.5);
+    font-size: 13px;
+    gap: 4px;
+  }
+  .group-row:last-child { border-bottom: none; }
+  .group-row.header {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 16px;
+    background: rgba(0,0,0,0.2);
+  }
+  .group-row.qualified { background: rgba(0,208,132,0.05); border-left: 3px solid var(--green); }
+  .group-row.qualified-3rd { background: rgba(245,197,24,0.05); border-left: 3px solid var(--gold); }
+  .team-name { font-weight: 600; }
+  .stat { text-align: center; color: var(--muted); font-family: 'Barlow Condensed', sans-serif; }
+  .stat.pts { color: var(--text); font-weight: 700; }
+  .pos { color: var(--dim); font-family: 'Barlow Condensed', sans-serif; }
+  .elo-small {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .qualified-tag {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--green);
+    margin-left: 4px;
+  }
+  .qualified-3rd-tag {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 9px;
+    letter-spacing: 1px;
+    color: var(--gold);
+    margin-left: 4px;
+  }
+
+  /* MATCHES panel */
+  .matches-header {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 1.3rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin: 24px 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .matches-header:first-child { margin-top: 0; }
+  .matches-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .match-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 10px;
+  }
+  .match-team { font-weight: 600; font-size: 12.5px; }
+  .match-team.right { text-align: right; }
+  .match-score {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 1.4rem;
+    color: var(--green);
+    letter-spacing: 2px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .match-score.tbd { color: var(--dim); font-size: 1rem; }
+
+  /* BRACKET */
+  .bracket-note {
+    background: rgba(245,197,24,0.08);
+    border: 1px solid rgba(245,197,24,0.3);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: #ccc;
+  }
+  .bracket-note strong { color: var(--gold); }
+
+  .bracket-section {
+    margin-bottom: 40px;
+  }
+  .bracket-round-title {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+    color: var(--green);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .bracket-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 10px;
+  }
+  .bracket-match {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .bracket-match-num {
+    background: var(--card2);
+    padding: 5px 12px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .bracket-team {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 12px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(42,46,53,0.4);
+  }
+  .bracket-team:last-child { border-bottom: none; }
+  .bracket-team.winner { background: rgba(0,208,132,0.07); }
+  .bracket-team.winner .bt-name { color: var(--green); font-weight: 700; }
+  .bt-name { font-weight: 600; }
+  .bt-score {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 1.2rem;
+    color: var(--muted);
+  }
+  .bt-score.win { color: var(--green); }
+
+  /* RANKING */
+  .ranking-table { width: 100%; border-collapse: collapse; }
+  .ranking-table th {
+    padding: 10px 14px;
+    text-align: left;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+    background: var(--card2);
+  }
+  .ranking-table th:not(:first-child):not(:nth-child(2)):not(:nth-child(3)) { text-align: center; }
+  .ranking-table td {
+    padding: 9px 14px;
+    border-bottom: 1px solid rgba(42,46,53,0.5);
+    font-size: 13.5px;
+  }
+  .ranking-table td:not(:first-child):not(:nth-child(2)):not(:nth-child(3)) { text-align: center; }
+  .ranking-table tr:last-child td { border-bottom: none; }
+  .ranking-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .rk-num { color: var(--muted); font-family: 'Barlow Condensed', sans-serif; font-size: 13px; }
+  .rk-name { font-weight: 700; }
+  .rk-group {
+    display: inline-block;
+    background: var(--card2);
+    color: var(--muted);
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    margin-left: 6px;
+  }
+  .rk-elo { font-family: 'Barlow Condensed', sans-serif; color: var(--muted); }
+  .pct-bar { display: flex; align-items: center; gap: 8px; }
+  .pct-track { flex: 1; height: 5px; background: var(--card2); border-radius: 3px; }
+  .pct-fill { height: 5px; border-radius: 3px; background: var(--green); }
+  .pct-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--green);
+    min-width: 38px;
+    text-align: right;
+  }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+  @media (max-width: 600px) {
+    .groups-grid { grid-template-columns: 1fr; }
+    .bracket-grid { grid-template-columns: 1fr; }
+    .matches-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-eyebrow">Simulation · One sample out of 10,000 possible outcomes</div>
+  <h1>Fixture <span>World Cup 2026</span></h1>
+  <div class="header-sub">USA · Canada · Mexico · June–July 2026 · 48 teams</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showPanel('grupos', this)">Groups</div>
+  <div class="tab" onclick="showPanel('partidos', this)">Matches</div>
+  <div class="tab" onclick="showPanel('bracket', this)">Knockout Bracket</div>
+  <div class="tab" onclick="showPanel('probabilidades', this)">Probabilities</div>
+</div>
+
+<!-- PANEL: GRUPOS -->
+<div class="panel active" id="panel-grupos">
+  <div class="legend">
+    <span class="legend-item"><span class="legend-dot" style="background:var(--green)"></span> Direct qualifier (1st and 2nd place)</span>
+    <span class="legend-item"><span class="legend-dot" style="background:var(--gold)"></span> Possible best third place</span>
+  </div>
+  <br>
+  <div class="groups-grid">
+
+    <div class="group-card">
+      <div class="group-header"><span class="group-letter">A</span><span class="group-badge">Mexico City · Guadalajara</span></div>
+      <div class="group-row header"><span></span><span>Team</span><span>PJ</span><span>DG</span><span>GF</span><span>Pts</span></div>
+      <div class="group-row qualified"><span class="pos">1</span><span class="team-name">Mexico <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+4</span><span class="stat">7</span><span class="stat pts">7</span></div>
+      <div class="group-row qualified"><span class="pos">2</span><span class="team-name">South Korea <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+1</span><span class="stat">4</span><span class="stat pts">5</span></div>
+      <div class="group-row qualified-3rd"><span class="pos">3</span><span class="team-name">South Africa</span><span class="stat">3</span><span class="stat">-1</span><span class="stat">3</span><span class="stat pts">4</span></div>
+      <div class="group-row"><span class="pos">4</span><span class="team-name">Czech Republic</span><span class="stat">3</span><span class="stat">-4</span><span class="stat">1</span><span class="stat pts">0</span></div>
+    </div>
+
+    <div class="group-card">
+      <div class="group-header"><span class="group-letter">B</span><span class="group-badge">Toronto · Vancouver</span></div>
+      <div class="group-row header"><span></span><span>Team</span><span>PJ</span><span>DG</span><span>GF</span><span>Pts</span></div>
+      <div class="group-row qualified"><span class="pos">1</span><span class="team-name">Canada <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+3</span><span class="stat">6</span><span class="stat pts">7</span></div>
+      <div class="group-row qualified"><span class="pos">2</span><span class="team-name">Switzerland <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+2</span><span class="stat">5</span><span class="stat pts">6</span></div>
+      <div class="group-row"><span class="pos">3</span><span class="team-name">Qatar</span><span class="stat">3</span><span class="stat">-2</span><span class="stat">3</span><span class="stat pts">3</span></div>
+      <div class="group-row"><span class="pos">4</span><span class="team-name">Bosnia-Herz.</span><span class="stat">3</span><span class="stat">-3</span><span class="stat">2</span><span class="stat pts">1</span></div>
+    </div>
+
+    <div class="group-card">
+      <div class="group-header"><span class="group-letter">C</span><span class="group-badge">Los Angeles · San Francisco</span></div>
+      <div class="group-row header"><span></span><span>Team</span><span>PJ</span><span>DG</span><span>GF</span><span>Pts</span></div>
+      <div class="group-row qualified"><span class="pos">1</span><span class="team-name">Brazil <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+5</span><span class="stat">7</span><span class="stat pts">7</span></div>
+      <div class="group-row qualified"><span class="pos">2</span><span class="team-name">Morocco <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+1</span><span class="stat">3</span><span class="stat pts">4</span></div>
+      <div class="group-row"><span class="pos">3</span><span class="team-name">Scotland</span><span class="stat">3</span><span class="stat">-2</span><span class="stat">2</span><span class="stat pts">3</span></div>
+      <div class="group-row"><span class="pos">4</span><span class="team-name">Haiti</span><span class="stat">3</span><span class="stat">-4</span><span class="stat">0</span><span class="stat pts">1</span></div>
+    </div>
+
+    <div class="group-card">
+      <div class="group-header"><span class="group-letter">D</span><span class="group-badge">Dallas · Houston</span></div>
+      <div class="group-row header"><span></span><span>Team</span><span>PJ</span><span>DG</span><span>GF</span><span>Pts</span></div>
+      <div class="group-row qualified"><span class="pos">1</span><span class="team-name">USA <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+2</span><span class="stat">5</span><span class="stat pts">6</span></div>
+      <div class="group-row qualified"><span class="pos">2</span><span class="team-name">Turkey <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+1</span><span class="stat">4</span><span class="stat pts">5</span></div>
+      <div class="group-row qualified-3rd"><span class="pos">3</span><span class="team-name">Australia</span><span class="stat">3</span><span class="stat">0</span><span class="stat">3</span><span class="stat pts">4</span></div>
+      <div class="group-row"><span class="pos">4</span><span class="team-name">Paraguay</span><span class="stat">3</span><span class="stat">-3</span><span class="stat">1</span><span class="stat pts">1</span></div>
+    </div>
+
+    <div class="group-card">
+      <div class="group-header"><span class="group-letter">E</span><span class="group-badge">Atlanta · Miami</span></div>
+      <div class="group-row header"><span></span><span>Team</span><span>PJ</span><span>DG</span><span>GF</span><span>Pts</span></div>
+      <div class="group-row qualified"><span class="pos">1</span><span class="team-name">Germany <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+4</span><span class="stat">7</span><span class="stat pts">7</span></div>
+      <div class="group-row qualified"><span class="pos">2</span><span class="team-name">Ecuador <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+1</span><span class="stat">3</span><span class="stat pts">5</span></div>
+      <div class="group-row"><span class="pos">3</span><span class="team-name">Ivory Coast</span><span class="stat">3</span><span class="stat">-1</span><span class="stat">2</span><span class="stat pts">3</span></div>
+      <div class="group-row"><span class="pos">4</span><span class="team-name">Curaçao</span><span class="stat">3</span><span class="stat">-4</span><span class="stat">0</span><span class="stat pts">0</span></div>
+    </div>
+
+    <div class="group-card">
+      <div class="group-header"><span class="group-letter">F</span><span class="group-badge">Seattle · Portland</span></div>
+      <div class="group-row header"><span></span><span>Team</span><span>PJ</span><span>DG</span><span>GF</span><span>Pts</span></div>
+      <div class="group-row qualified"><span class="pos">1</span><span class="team-name">Netherlands <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+3</span><span class="stat">6</span><span class="stat pts">7</span></div>
+      <div class="group-row qualified"><span class="pos">2</span><span class="team-name">Japan <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+1</span><span class="stat">4</span><span class="stat pts">5</span></div>
+      <div class="group-row qualified-3rd"><span class="pos">3</span><span class="team-name">Sweden</span><span class="stat">3</span><span class="stat">0</span><span class="stat">3</span><span class="stat pts">3</span></div>
+      <div class="group-row"><span class="pos">4</span><span class="team-name">Tunisia</span><span class="stat">3</span><span class="stat">-4</span><span class="stat">0</span><span class="stat pts">0</span></div>
+    </div>
+
+    <div class="group-card">
+      <div class="group-header"><span class="group-letter">G</span><span class="group-badge">Boston · Philadelphia</span></div>
+      <div class="group-row header"><span></span><span>Team</span><span>PJ</span><span>DG</span><span>GF</span><span>Pts</span></div>
+      <div class="group-row qualified"><span class="pos">1</span><span class="team-name">Belgium <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+3</span><span class="stat">5</span><span class="stat pts">6</span></div>
+      <div class="group-row qualified"><span class="pos">2</span><span class="team-name">Egypt <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+1</span><span class="stat">3</span><span class="stat pts">5</span></div>
+      <div class="group-row qualified-3rd"><span class="pos">3</span><span class="team-name">Iran</span><span class="stat">3</span><span class="stat">0</span><span class="stat">2</span><span class="stat pts">4</span></div>
+      <div class="group-row"><span class="pos">4</span><span class="team-name">New Zealand</span><span class="stat">3</span><span class="stat">-4</span><span class="stat">0</span><span class="stat pts">0</span></div>
+    </div>
+
+    <div class="group-card">
+      <div class="group-header"><span class="group-letter">H</span><span class="group-badge">New York · New Jersey</span></div>
+      <div class="group-row header"><span></span><span>Team</span><span>PJ</span><span>DG</span><span>GF</span><span>Pts</span></div>
+      <div class="group-row qualified"><span class="pos">1</span><span class="team-name">Spain <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+7</span><span class="stat">9</span><span class="stat pts">9</span></div>
+      <div class="group-row qualified"><span class="pos">2</span><span class="team-name">Uruguay <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+1</span><span class="stat">3</span><span class="stat pts">4</span></div>
+      <div class="group-row"><span class="pos">3</span><span class="team-name">Saudi Arabia</span><span class="stat">3</span><span class="stat">-2</span><span class="stat">2</span><span class="stat pts">3</span></div>
+      <div class="group-row"><span class="pos">4</span><span class="team-name">Cape Verde</span><span class="stat">3</span><span class="stat">-6</span><span class="stat">0</span><span class="stat pts">0</span></div>
+    </div>
+
+    <div class="group-card">
+      <div class="group-header"><span class="group-letter">I</span><span class="group-badge">Kansas City · Denver</span></div>
+      <div class="group-row header"><span></span><span>Team</span><span>PJ</span><span>DG</span><span>GF</span><span>Pts</span></div>
+      <div class="group-row qualified"><span class="pos">1</span><span class="team-name">France <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+5</span><span class="stat">7</span><span class="stat pts">9</span></div>
+      <div class="group-row qualified"><span class="pos">2</span><span class="team-name">Norway <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+1</span><span class="stat">4</span><span class="stat pts">5</span></div>
+      <div class="group-row qualified-3rd"><span class="pos">3</span><span class="team-name">Senegal</span><span class="stat">3</span><span class="stat">0</span><span class="stat">2</span><span class="stat pts">4</span></div>
+      <div class="group-row"><span class="pos">4</span><span class="team-name">Iraq</span><span class="stat">3</span><span class="stat">-6</span><span class="stat">0</span><span class="stat pts">0</span></div>
+    </div>
+
+    <div class="group-card">
+      <div class="group-header"><span class="group-letter">J</span><span class="group-badge">San Francisco · Los Angeles</span></div>
+      <div class="group-row header"><span></span><span>Team</span><span>PJ</span><span>DG</span><span>GF</span><span>Pts</span></div>
+      <div class="group-row qualified"><span class="pos">1</span><span class="team-name">Argentina <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+6</span><span class="stat">8</span><span class="stat pts">9</span></div>
+      <div class="group-row qualified"><span class="pos">2</span><span class="team-name">Austria <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+1</span><span class="stat">3</span><span class="stat pts">4</span></div>
+      <div class="group-row"><span class="pos">3</span><span class="team-name">Algeria</span><span class="stat">3</span><span class="stat">-2</span><span class="stat">2</span><span class="stat pts">3</span></div>
+      <div class="group-row"><span class="pos">4</span><span class="team-name">Jordan</span><span class="stat">3</span><span class="stat">-5</span><span class="stat">0</span><span class="stat pts">0</span></div>
+    </div>
+
+    <div class="group-card">
+      <div class="group-header"><span class="group-letter">K</span><span class="group-badge">Miami · Atlanta</span></div>
+      <div class="group-row header"><span></span><span>Team</span><span>PJ</span><span>DG</span><span>GF</span><span>Pts</span></div>
+      <div class="group-row qualified"><span class="pos">1</span><span class="team-name">Portugal <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+4</span><span class="stat">7</span><span class="stat pts">7</span></div>
+      <div class="group-row qualified"><span class="pos">2</span><span class="team-name">Colombia <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+1</span><span class="stat">4</span><span class="stat pts">5</span></div>
+      <div class="group-row"><span class="pos">3</span><span class="team-name">Uzbekistan</span><span class="stat">3</span><span class="stat">-1</span><span class="stat">2</span><span class="stat pts">4</span></div>
+      <div class="group-row"><span class="pos">4</span><span class="team-name">DR Congo</span><span class="stat">3</span><span class="stat">-4</span><span class="stat">0</span><span class="stat pts">0</span></div>
+    </div>
+
+    <div class="group-card">
+      <div class="group-header"><span class="group-letter">L</span><span class="group-badge">Dallas · Houston</span></div>
+      <div class="group-row header"><span></span><span>Team</span><span>PJ</span><span>DG</span><span>GF</span><span>Pts</span></div>
+      <div class="group-row qualified"><span class="pos">1</span><span class="team-name">England <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+5</span><span class="stat">7</span><span class="stat pts">9</span></div>
+      <div class="group-row qualified"><span class="pos">2</span><span class="team-name">Croatia <span class="qualified-tag">✓</span></span><span class="stat">3</span><span class="stat">+1</span><span class="stat">4</span><span class="stat pts">5</span></div>
+      <div class="group-row qualified-3rd"><span class="pos">3</span><span class="team-name">Panama</span><span class="stat">3</span><span class="stat">0</span><span class="stat">2</span><span class="stat pts">4</span></div>
+      <div class="group-row"><span class="pos">4</span><span class="team-name">Ghana</span><span class="stat">3</span><span class="stat">-6</span><span class="stat">0</span><span class="stat pts">0</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- PANEL: BRACKET -->
+<div class="panel" id="panel-bracket">
+  <div class="bracket-note">
+    <strong>📌 Nota:</strong> This fixture is a sample simulation — one of 10,000 possible scenarios. The real bracket will depend on the official FIFA draw. Results illustrate how the tournament could unfold according to the model.
+  </div>
+
+  <div class="bracket-section">
+    <div class="bracket-round-title">Round of 32</div>
+    <div class="bracket-grid">
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-1 · 1st A vs 2nd B</div>
+        <div class="bracket-team winner"><span class="bt-name">Mexico</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">Switzerland</span><span class="bt-score">1</span></div>
+      </div>
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-2 · 1st C vs 2nd D</div>
+        <div class="bracket-team winner"><span class="bt-name">Brazil</span><span class="bt-score win">3</span></div>
+        <div class="bracket-team"><span class="bt-name">Turkey</span><span class="bt-score">1</span></div>
+      </div>
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-3 · 1st E vs 2nd F</div>
+        <div class="bracket-team winner"><span class="bt-name">Germany</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">Japan</span><span class="bt-score">0</span></div>
+      </div>
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-4 · 1st G vs 2nd H</div>
+        <div class="bracket-team winner"><span class="bt-name">Belgium</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">Uruguay</span><span class="bt-score">1</span></div>
+      </div>
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-5 · 1st I vs 2nd J</div>
+        <div class="bracket-team winner"><span class="bt-name">France</span><span class="bt-score win">3</span></div>
+        <div class="bracket-team"><span class="bt-name">Austria</span><span class="bt-score">0</span></div>
+      </div>
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-6 · 1st K vs 2nd L</div>
+        <div class="bracket-team winner"><span class="bt-name">Portugal</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">Croatia</span><span class="bt-score">1</span></div>
+      </div>
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-7 · 1st H vs 2nd G</div>
+        <div class="bracket-team winner"><span class="bt-name">Spain</span><span class="bt-score win">4</span></div>
+        <div class="bracket-team"><span class="bt-name">Egypt</span><span class="bt-score">0</span></div>
+      </div>
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-8 · 1st J vs 2nd I</div>
+        <div class="bracket-team winner"><span class="bt-name">Argentina</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">Norway</span><span class="bt-score">0</span></div>
+      </div>
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-9 · 3rd B vs 1st D</div>
+        <div class="bracket-team winner"><span class="bt-name">USA</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">Canada</span><span class="bt-score">1</span></div>
+      </div>
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-10 · 3rd F vs 1st B</div>
+        <div class="bracket-team winner"><span class="bt-name">South Korea</span><span class="bt-score win">1</span></div>
+        <div class="bracket-team"><span class="bt-name">Sweden</span><span class="bt-score">0</span></div>
+      </div>
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-11 · 3rd A vs 2nd K</div>
+        <div class="bracket-team winner"><span class="bt-name">Colombia</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">South Africa</span><span class="bt-score">0</span></div>
+      </div>
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-12 · 3rd D vs 2nd A</div>
+        <div class="bracket-team winner"><span class="bt-name">Australia</span><span class="bt-score win">1</span></div>
+        <div class="bracket-team"><span class="bt-name">South Korea</span><span class="bt-score">1</span></div>
+      </div>
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-13 · 3rd I vs 2nd C</div>
+        <div class="bracket-team winner"><span class="bt-name">Morocco</span><span class="bt-score win">1</span></div>
+        <div class="bracket-team"><span class="bt-name">Senegal</span><span class="bt-score">0</span></div>
+      </div>
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-14 · 1st F vs 2nd E</div>
+        <div class="bracket-team winner"><span class="bt-name">Netherlands</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">Ecuador</span><span class="bt-score">1</span></div>
+      </div>
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-15 · 3rd G vs 1st L</div>
+        <div class="bracket-team winner"><span class="bt-name">England</span><span class="bt-score win">3</span></div>
+        <div class="bracket-team"><span class="bt-name">Iran</span><span class="bt-score">0</span></div>
+      </div>
+
+      <div class="bracket-match">
+        <div class="bracket-match-num">Match R32-16 · 3rd L vs 1st A</div>
+        <div class="bracket-team winner"><span class="bt-name">Mexico</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">Panama</span><span class="bt-score">0</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="bracket-section">
+    <div class="bracket-round-title">Round of 16</div>
+    <div class="bracket-grid">
+      <div class="bracket-match">
+        <div class="bracket-match-num">QF-1</div>
+        <div class="bracket-team winner"><span class="bt-name">Mexico</span><span class="bt-score win">1</span></div>
+        <div class="bracket-team"><span class="bt-name">Brazil</span><span class="bt-score">1</span></div>
+      </div>
+      <div class="bracket-match">
+        <div class="bracket-match-num">QF-2</div>
+        <div class="bracket-team winner"><span class="bt-name">Germany</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">Belgium</span><span class="bt-score">0</span></div>
+      </div>
+      <div class="bracket-match">
+        <div class="bracket-match-num">QF-3</div>
+        <div class="bracket-team winner"><span class="bt-name">France</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">Portugal</span><span class="bt-score">1</span></div>
+      </div>
+      <div class="bracket-match">
+        <div class="bracket-match-num">QF-4</div>
+        <div class="bracket-team winner"><span class="bt-name">Spain</span><span class="bt-score win">3</span></div>
+        <div class="bracket-team"><span class="bt-name">Argentina</span><span class="bt-score">1</span></div>
+      </div>
+      <div class="bracket-match">
+        <div class="bracket-match-num">QF-5</div>
+        <div class="bracket-team winner"><span class="bt-name">Netherlands</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">USA</span><span class="bt-score">0</span></div>
+      </div>
+      <div class="bracket-match">
+        <div class="bracket-match-num">QF-6</div>
+        <div class="bracket-team winner"><span class="bt-name">Morocco</span><span class="bt-score win">1</span></div>
+        <div class="bracket-team"><span class="bt-name">Colombia</span><span class="bt-score">0</span></div>
+      </div>
+      <div class="bracket-match">
+        <div class="bracket-match-num">QF-7</div>
+        <div class="bracket-team winner"><span class="bt-name">England</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">Australia</span><span class="bt-score">0</span></div>
+      </div>
+      <div class="bracket-match">
+        <div class="bracket-match-num">QF-8</div>
+        <div class="bracket-team winner"><span class="bt-name">Mexico</span><span class="bt-score win">1</span></div>
+        <div class="bracket-team"><span class="bt-name">South Korea</span><span class="bt-score">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bracket-section">
+    <div class="bracket-round-title">Quarterfinals</div>
+    <div class="bracket-grid">
+      <div class="bracket-match">
+        <div class="bracket-match-num">SF-1</div>
+        <div class="bracket-team winner"><span class="bt-name">Mexico</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">Germany</span><span class="bt-score">1</span></div>
+      </div>
+      <div class="bracket-match">
+        <div class="bracket-match-num">SF-2</div>
+        <div class="bracket-team winner"><span class="bt-name">Spain</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">France</span><span class="bt-score">1</span></div>
+      </div>
+      <div class="bracket-match">
+        <div class="bracket-match-num">SF-3</div>
+        <div class="bracket-team winner"><span class="bt-name">Netherlands</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">Morocco</span><span class="bt-score">0</span></div>
+      </div>
+      <div class="bracket-match">
+        <div class="bracket-match-num">SF-4</div>
+        <div class="bracket-team winner"><span class="bt-name">England</span><span class="bt-score win">1</span></div>
+        <div class="bracket-team"><span class="bt-name">Mexico</span><span class="bt-score">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bracket-section">
+    <div class="bracket-round-title">Semifinals</div>
+    <div class="bracket-grid" style="max-width:520px">
+      <div class="bracket-match">
+        <div class="bracket-match-num">Semifinal · July 5, 2026</div>
+        <div class="bracket-team winner"><span class="bt-name">Spain</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">Mexico</span><span class="bt-score">0</span></div>
+      </div>
+      <div class="bracket-match">
+        <div class="bracket-match-num">Semifinal · July 6, 2026</div>
+        <div class="bracket-team winner"><span class="bt-name">Netherlands</span><span class="bt-score win">2</span></div>
+        <div class="bracket-team"><span class="bt-name">England</span><span class="bt-score">1</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bracket-section">
+    <div class="bracket-round-title" style="color:var(--gold)">🏆 Final — Jul 19, 2026 · MetLife Stadium, New York</div>
+    <div style="max-width:380px">
+      <div class="bracket-match" style="border-color: var(--gold);">
+        <div class="bracket-match-num" style="background:rgba(245,197,24,0.1); color:var(--gold);">Grand Final · MetLife Stadium · New York</div>
+        <div class="bracket-team winner"><span class="bt-name">🇪🇸 Spain</span><span class="bt-score win" style="color:var(--gold)">2</span></div>
+        <div class="bracket-team"><span class="bt-name">🇳🇱 Netherlands</span><span class="bt-score">1</span></div>
+      </div>
+    </div>
+    <div style="margin-top:20px; padding:20px; background:rgba(245,197,24,0.06); border:1px solid rgba(245,197,24,0.3); border-radius:10px; max-width:380px;">
+      <div style="font-family:'Bebas Neue',cursive; font-size:1rem; letter-spacing:2px; color:var(--gold); margin-bottom:6px;">🏆 SIMULATED CHAMPION</div>
+      <div style="font-family:'Bebas Neue',cursive; font-size:2.5rem; letter-spacing:2px; color:var(--text);">🇪🇸 Spain</div>
+      <div style="font-size:12px; color:var(--muted); margin-top:6px;">Championship probability: 19.7% · This is one of 10,000 possible simulations</div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL: PARTIDOS -->
+<div class="panel" id="panel-partidos">
+
+<style>
+.phase-title {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 1.6rem;
+  letter-spacing: 2px;
+  color: var(--green);
+  padding: 20px 0 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.phase-title span {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--muted);
+  text-transform: uppercase;
+  font-weight: normal;
+}
+.match-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+.ml-row {
+  display: grid;
+  grid-template-columns: 110px 80px 1fr auto 1fr 70px;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 9px 14px;
+  font-size: 13px;
+}
+.ml-date {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.3;
+}
+.ml-date strong { color: var(--text); display: block; font-size: 13px; }
+.ml-time {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 1.1rem;
+  color: var(--green);
+  letter-spacing: 1px;
+}
+.ml-home { font-weight: 600; text-align: right; }
+.ml-score {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 1.3rem;
+  color: var(--text);
+  letter-spacing: 3px;
+  text-align: center;
+  white-space: nowrap;
+  background: var(--card2);
+  padding: 3px 10px;
+  border-radius: 5px;
+  min-width: 64px;
+}
+.ml-score.tbd { color: var(--dim); font-size: 1rem; letter-spacing: 1px; }
+.ml-away { font-weight: 600; }
+.ml-venue {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+  line-height: 1.3;
+}
+.ml-group {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px;
+  background: var(--card2);
+  color: var(--green);
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid rgba(0,208,132,0.3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.ml-ko {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 10px;
+  background: rgba(245,197,24,0.08);
+  color: var(--gold);
+  padding: 2px 7px;
+  border-radius: 3px;
+  border: 1px solid rgba(245,197,24,0.3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.note-tz {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 10px 16px;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 20px;
+  letter-spacing: 0.5px;
+}
+.note-tz strong { color: var(--text); }
+@media(max-width:700px){
+  .ml-row { grid-template-columns: 90px 60px 1fr auto 1fr; }
+  .ml-venue { display: none; }
+}
+@media(max-width:500px){
+  .ml-row { grid-template-columns: 1fr auto 1fr; font-size:12px; }
+  .ml-date, .ml-time, .ml-venue { display: none; }
+}
+</style>
+
+<div class="note-tz">
+  🕐 <strong>All times in Argentina time (UTC−3).</strong> World Cup 2026 will be played mainly in the USA (UTC−4/−5), with some matches in Canada (UTC−4/−5) and Mexico (UTC−6). Times are estimated based on FIFA's typical scheduling blocks.
+</div>
+
+<!-- FASE DE GRUPOS -->
+<div class="phase-title">Group Stage <span>Jun 11 – Jul 2, 2026 · 72 matches</span></div>
+
+<div class="match-list">
+  <!-- JORNADA 1 -->
+  <div class="ml-row"><div class="ml-date"><strong>11 Jun</strong>Thu</div><div class="ml-time">18:00</div><div class="ml-home">Mexico 🇲🇽</div><div class="ml-score">2 – 0</div><div class="ml-away">🇿🇦 South Africa</div><div class="ml-venue"><span class="ml-group">Grp A</span><br>Ciudad de Mexico</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>11 Jun</strong>Thu</div><div class="ml-time">21:00</div><div class="ml-home">Czech Republic 🇨🇿</div><div class="ml-score">1 – 2</div><div class="ml-away">🇰🇷 South Korea</div><div class="ml-venue"><span class="ml-group">Grp A</span><br>Guadalajara</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>12 Jun</strong>Fri</div><div class="ml-time">18:00</div><div class="ml-home">Canada 🇨🇦</div><div class="ml-score">2 – 1</div><div class="ml-away">🇧🇦 Bosnia-Herz.</div><div class="ml-venue"><span class="ml-group">Grp B</span><br>Toronto</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>12 Jun</strong>Fri</div><div class="ml-time">21:00</div><div class="ml-home">Switzerland 🇨🇭</div><div class="ml-score">2 – 0</div><div class="ml-away">🇶🇦 Qatar</div><div class="ml-venue"><span class="ml-group">Grp B</span><br>Vancouver</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>13 Jun</strong>Sat</div><div class="ml-time">16:00</div><div class="ml-home">Brazil 🇧🇷</div><div class="ml-score">3 – 0</div><div class="ml-away">🇭🇹 Haiti</div><div class="ml-venue"><span class="ml-group">Grp C</span><br>Los Angeles</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>13 Jun</strong>Sat</div><div class="ml-time">19:00</div><div class="ml-home">Morocco 🇲🇦</div><div class="ml-score">1 – 0</div><div class="ml-away">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland</div><div class="ml-venue"><span class="ml-group">Grp C</span><br>San Francisco</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>13 Jun</strong>Sat</div><div class="ml-time">22:00</div><div class="ml-home">USA 🇺🇸</div><div class="ml-score">2 – 1</div><div class="ml-away">🇵🇾 Paraguay</div><div class="ml-venue"><span class="ml-group">Grp D</span><br>Dallas</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>14 Jun</strong>Sun</div><div class="ml-time">16:00</div><div class="ml-home">Turkey 🇹🇷</div><div class="ml-score">2 – 1</div><div class="ml-away">🇦🇺 Australia</div><div class="ml-venue"><span class="ml-group">Grp D</span><br>Houston</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>14 Jun</strong>Sun</div><div class="ml-time">19:00</div><div class="ml-home">Germany 🇩🇪</div><div class="ml-score">3 – 0</div><div class="ml-away">🇨🇼 Curaçao</div><div class="ml-venue"><span class="ml-group">Grp E</span><br>Atlanta</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>14 Jun</strong>Sun</div><div class="ml-time">22:00</div><div class="ml-home">Ecuador 🇪🇨</div><div class="ml-score">2 – 0</div><div class="ml-away">🇨🇮 Costa Tuefil</div><div class="ml-venue"><span class="ml-group">Grp E</span><br>Miami</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>15 Jun</strong>Mon</div><div class="ml-time">18:00</div><div class="ml-home">Netherlands 🇳🇱</div><div class="ml-score">2 – 1</div><div class="ml-away">🇸🇪 Sweden</div><div class="ml-venue"><span class="ml-group">Grp F</span><br>Seattle</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>15 Jun</strong>Mon</div><div class="ml-time">21:00</div><div class="ml-home">Japan 🇯🇵</div><div class="ml-score">2 – 0</div><div class="ml-away">🇹🇳 Tunisia</div><div class="ml-venue"><span class="ml-group">Grp F</span><br>Portland</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>15 Jun</strong>Mon</div><div class="ml-time">18:00</div><div class="ml-home">Belgium 🇧🇪</div><div class="ml-score">2 – 1</div><div class="ml-away">🇳🇿 New Zealand</div><div class="ml-venue"><span class="ml-group">Grp G</span><br>Boston</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>16 Jun</strong>Tue</div><div class="ml-time">21:00</div><div class="ml-home">Iran 🇮🇷</div><div class="ml-score">1 – 0</div><div class="ml-away">🇪🇬 Egypt</div><div class="ml-venue"><span class="ml-group">Grp G</span><br>Philadelphia</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>16 Jun</strong>Tue</div><div class="ml-time">18:00</div><div class="ml-home">Spain 🇪🇸</div><div class="ml-score">4 – 0</div><div class="ml-away">🇨🇻 Cape Verde</div><div class="ml-venue"><span class="ml-group">Grp H</span><br>New York</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>16 Jun</strong>Tue</div><div class="ml-time">21:00</div><div class="ml-home">Uruguay 🇺🇾</div><div class="ml-score">2 – 1</div><div class="ml-away">🇸🇦 Saudi Arabia</div><div class="ml-venue"><span class="ml-group">Grp H</span><br>New York</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>17 Jun</strong>Wed</div><div class="ml-time">18:00</div><div class="ml-home">France 🇫🇷</div><div class="ml-score">3 – 0</div><div class="ml-away">🇮🇶 Iraq</div><div class="ml-venue"><span class="ml-group">Grp I</span><br>Kansas City</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>17 Jun</strong>Wed</div><div class="ml-time">21:00</div><div class="ml-home">Norway 🇳🇴</div><div class="ml-score">2 – 1</div><div class="ml-away">🇸🇳 Senegal</div><div class="ml-venue"><span class="ml-group">Grp I</span><br>Denver</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>18 Jun</strong>Thu</div><div class="ml-time">18:00</div><div class="ml-home">Argentina 🇦🇷</div><div class="ml-score">4 – 0</div><div class="ml-away">🇯🇴 Jordan</div><div class="ml-venue"><span class="ml-group">Grp J</span><br>Los Angeles</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>18 Jun</strong>Thu</div><div class="ml-time">21:00</div><div class="ml-home">Austria 🇦🇹</div><div class="ml-score">1 – 1</div><div class="ml-away">🇩🇿 Algeria</div><div class="ml-venue"><span class="ml-group">Grp J</span><br>San Francisco</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>19 Jun</strong>Fri</div><div class="ml-time">18:00</div><div class="ml-home">Portugal 🇵🇹</div><div class="ml-score">3 – 0</div><div class="ml-away">🇨🇩 DR Congo</div><div class="ml-venue"><span class="ml-group">Grp K</span><br>Miami</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>19 Jun</strong>Fri</div><div class="ml-time">21:00</div><div class="ml-home">Colombia 🇨🇴</div><div class="ml-score">2 – 1</div><div class="ml-away">🇺🇿 Uzbekistan</div><div class="ml-venue"><span class="ml-group">Grp K</span><br>Atlanta</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>20 Jun</strong>Sat</div><div class="ml-time">18:00</div><div class="ml-home">England 🏴󠁧󠁢󠁥󠁮󠁧󠁿</div><div class="ml-score">3 – 0</div><div class="ml-away">🇬🇭 Ghana</div><div class="ml-venue"><span class="ml-group">Grp L</span><br>Dallas</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>20 Jun</strong>Sat</div><div class="ml-time">21:00</div><div class="ml-home">Croatia 🇭🇷</div><div class="ml-score">2 – 1</div><div class="ml-away">🇵🇦 Panama</div><div class="ml-venue"><span class="ml-group">Grp L</span><br>Houston</div></div>
+
+  <!-- JORNADA 2 -->
+  <div class="ml-row"><div class="ml-date"><strong>21 Jun</strong>Sun</div><div class="ml-time">18:00</div><div class="ml-home">South Korea 🇰🇷</div><div class="ml-score">2 – 1</div><div class="ml-away">🇲🇽 Mexico</div><div class="ml-venue"><span class="ml-group">Grp A</span><br>Guadalajara</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>21 Jun</strong>Sun</div><div class="ml-time">21:00</div><div class="ml-home">South Africa 🇿🇦</div><div class="ml-score">2 – 1</div><div class="ml-away">🇨🇿 Czech Republic</div><div class="ml-venue"><span class="ml-group">Grp A</span><br>Ciudad de Mexico</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>22 Jun</strong>Mon</div><div class="ml-time">18:00</div><div class="ml-home">Bosnia-Herz. 🇧🇦</div><div class="ml-score">1 – 2</div><div class="ml-away">🇶🇦 Qatar</div><div class="ml-venue"><span class="ml-group">Grp B</span><br>Vancouver</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>22 Jun</strong>Mon</div><div class="ml-time">21:00</div><div class="ml-home">Switzerland 🇨🇭</div><div class="ml-score">1 – 0</div><div class="ml-away">🇨🇦 Canada</div><div class="ml-venue"><span class="ml-group">Grp B</span><br>Toronto</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>23 Jun</strong>Tue</div><div class="ml-time">18:00</div><div class="ml-home">Scotland 🏴󠁧󠁢󠁳󠁣󠁴󠁿</div><div class="ml-score">2 – 0</div><div class="ml-away">🇭🇹 Haiti</div><div class="ml-venue"><span class="ml-group">Grp C</span><br>San Francisco</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>23 Jun</strong>Tue</div><div class="ml-time">21:00</div><div class="ml-home">Brazil 🇧🇷</div><div class="ml-score">2 – 1</div><div class="ml-away">🇲🇦 Morocco</div><div class="ml-venue"><span class="ml-group">Grp C</span><br>Los Angeles</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>24 Jun</strong>Wed</div><div class="ml-time">18:00</div><div class="ml-home">Australia 🇦🇺</div><div class="ml-score">1 – 1</div><div class="ml-away">🇵🇾 Paraguay</div><div class="ml-venue"><span class="ml-group">Grp D</span><br>Houston</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>24 Jun</strong>Wed</div><div class="ml-time">21:00</div><div class="ml-home">USA 🇺🇸</div><div class="ml-score">1 – 0</div><div class="ml-away">🇹🇷 Turkey</div><div class="ml-venue"><span class="ml-group">Grp D</span><br>Dallas</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>25 Jun</strong>Thu</div><div class="ml-time">18:00</div><div class="ml-home">Costa Tuefil 🇨🇮</div><div class="ml-score">1 – 1</div><div class="ml-away">🇨🇼 Curaçao</div><div class="ml-venue"><span class="ml-group">Grp E</span><br>Miami</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>25 Jun</strong>Thu</div><div class="ml-time">21:00</div><div class="ml-home">Germany 🇩🇪</div><div class="ml-score">2 – 0</div><div class="ml-away">🇪🇨 Ecuador</div><div class="ml-venue"><span class="ml-group">Grp E</span><br>Atlanta</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>26 Jun</strong>Fri</div><div class="ml-time">18:00</div><div class="ml-home">Sweden 🇸🇪</div><div class="ml-score">1 – 1</div><div class="ml-away">🇹🇳 Tunisia</div><div class="ml-venue"><span class="ml-group">Grp F</span><br>Portland</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>26 Jun</strong>Fri</div><div class="ml-time">21:00</div><div class="ml-home">Netherlands 🇳🇱</div><div class="ml-score">2 – 0</div><div class="ml-away">🇯🇵 Japan</div><div class="ml-venue"><span class="ml-group">Grp F</span><br>Seattle</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>27 Jun</strong>Sat</div><div class="ml-time">18:00</div><div class="ml-home">New Zealand 🇳🇿</div><div class="ml-score">0 – 2</div><div class="ml-away">🇮🇷 Iran</div><div class="ml-venue"><span class="ml-group">Grp G</span><br>Philadelphia</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>27 Jun</strong>Sat</div><div class="ml-time">21:00</div><div class="ml-home">Belgium 🇧🇪</div><div class="ml-score">1 – 0</div><div class="ml-away">🇪🇬 Egypt</div><div class="ml-venue"><span class="ml-group">Grp G</span><br>Boston</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>28 Jun</strong>Sun</div><div class="ml-time">18:00</div><div class="ml-home">Cape Verde 🇨🇻</div><div class="ml-score">0 – 2</div><div class="ml-away">🇺🇾 Uruguay</div><div class="ml-venue"><span class="ml-group">Grp H</span><br>New York</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>28 Jun</strong>Sun</div><div class="ml-time">21:00</div><div class="ml-home">Spain 🇪🇸</div><div class="ml-score">2 – 0</div><div class="ml-away">🇸🇦 Saudi Arabia</div><div class="ml-venue"><span class="ml-group">Grp H</span><br>New York</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>29 Jun</strong>Mon</div><div class="ml-time">18:00</div><div class="ml-home">Senegal 🇸🇳</div><div class="ml-score">1 – 1</div><div class="ml-away">🇮🇶 Iraq</div><div class="ml-venue"><span class="ml-group">Grp I</span><br>Denver</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>29 Jun</strong>Mon</div><div class="ml-time">21:00</div><div class="ml-home">France 🇫🇷</div><div class="ml-score">2 – 1</div><div class="ml-away">🇳🇴 Norway</div><div class="ml-venue"><span class="ml-group">Grp I</span><br>Kansas City</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>30 Jun</strong>Tue</div><div class="ml-time">18:00</div><div class="ml-home">Algeria 🇩🇿</div><div class="ml-score">0 – 2</div><div class="ml-away">🇦🇷 Argentina</div><div class="ml-venue"><span class="ml-group">Grp J</span><br>Los Angeles</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>30 Jun</strong>Tue</div><div class="ml-time">21:00</div><div class="ml-home">Jordan 🇯🇴</div><div class="ml-score">0 – 1</div><div class="ml-away">🇦🇹 Austria</div><div class="ml-venue"><span class="ml-group">Grp J</span><br>San Francisco</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>1 Jul</strong>Wed</div><div class="ml-time">18:00</div><div class="ml-home">Uzbekistan 🇺🇿</div><div class="ml-score">0 – 2</div><div class="ml-away">🇵🇹 Portugal</div><div class="ml-venue"><span class="ml-group">Grp K</span><br>Miami</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>1 Jul</strong>Wed</div><div class="ml-time">21:00</div><div class="ml-home">DR Congo 🇨🇩</div><div class="ml-score">1 – 1</div><div class="ml-away">🇨🇴 Colombia</div><div class="ml-venue"><span class="ml-group">Grp K</span><br>Atlanta</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>2 Jul</strong>Thu</div><div class="ml-time">18:00</div><div class="ml-home">Panama 🇵🇦</div><div class="ml-score">2 – 1</div><div class="ml-away">🇬🇭 Ghana</div><div class="ml-venue"><span class="ml-group">Grp L</span><br>Houston</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>2 Jul</strong>Thu</div><div class="ml-time">21:00</div><div class="ml-home">England 🏴󠁧󠁢󠁥󠁮󠁧󠁿</div><div class="ml-score">2 – 1</div><div class="ml-away">🇭🇷 Croatia</div><div class="ml-venue"><span class="ml-group">Grp L</span><br>Dallas</div></div>
+
+  <!-- JORNADA 3 -->
+  <div class="ml-row"><div class="ml-date"><strong>3 Jul</strong>Fri</div><div class="ml-time">21:00</div><div class="ml-home">Mexico 🇲🇽</div><div class="ml-score">3 – 0</div><div class="ml-away">🇨🇿 Czech Republic</div><div class="ml-venue"><span class="ml-group">Grp A</span><br>Ciudad de Mexico</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>3 Jul</strong>Fri</div><div class="ml-time">21:00</div><div class="ml-home">South Africa 🇿🇦</div><div class="ml-score">0 – 2</div><div class="ml-away">🇰🇷 South Korea</div><div class="ml-venue"><span class="ml-group">Grp A</span><br>Guadalajara</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>3 Jul</strong>Fri</div><div class="ml-time">18:00</div><div class="ml-home">Canada 🇨🇦</div><div class="ml-score">3 – 0</div><div class="ml-away">🇧🇦 Bosnia-Herz.</div><div class="ml-venue"><span class="ml-group">Grp B</span><br>Toronto</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>3 Jul</strong>Fri</div><div class="ml-time">18:00</div><div class="ml-home">Switzerland 🇨🇭</div><div class="ml-score">2 – 1</div><div class="ml-away">🇶🇦 Qatar</div><div class="ml-venue"><span class="ml-group">Grp B</span><br>Vancouver</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>1 Jul</strong>Wed</div><div class="ml-time">18:00</div><div class="ml-home">Haiti 🇭🇹</div><div class="ml-score">0 – 1</div><div class="ml-away">🇲🇦 Morocco</div><div class="ml-venue"><span class="ml-group">Grp C</span><br>Los Angeles</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>1 Jul</strong>Wed</div><div class="ml-time">21:00</div><div class="ml-home">Brazil 🇧🇷</div><div class="ml-score">2 – 0</div><div class="ml-away">🏴󠁧󠁢󠁳󠁣󠁴󠁿 Scotland</div><div class="ml-venue"><span class="ml-group">Grp C</span><br>San Francisco</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>2 Jul</strong>Thu</div><div class="ml-time">18:00</div><div class="ml-home">Paraguay 🇵🇾</div><div class="ml-score">0 – 1</div><div class="ml-away">🇹🇷 Turkey</div><div class="ml-venue"><span class="ml-group">Grp D</span><br>Houston</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>2 Jul</strong>Thu</div><div class="ml-time">21:00</div><div class="ml-home">USA 🇺🇸</div><div class="ml-score">2 – 1</div><div class="ml-away">🇦🇺 Australia</div><div class="ml-venue"><span class="ml-group">Grp D</span><br>Dallas</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>4 Jul</strong>Sat</div><div class="ml-time">22:00</div><div class="ml-home">Argentina 🇦🇷</div><div class="ml-score">2 – 1</div><div class="ml-away">🇦🇹 Austria</div><div class="ml-venue"><span class="ml-group">Grp J</span><br>Los Angeles</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>4 Jul</strong>Sat</div><div class="ml-time">22:00</div><div class="ml-home">Algeria 🇩🇿</div><div class="ml-score">2 – 0</div><div class="ml-away">🇯🇴 Jordan</div><div class="ml-venue"><span class="ml-group">Grp J</span><br>San Francisco</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>5 Jul</strong>Sun</div><div class="ml-time">22:00</div><div class="ml-home">Spain 🇪🇸</div><div class="ml-score">3 – 0</div><div class="ml-away">🇺🇾 Uruguay</div><div class="ml-venue"><span class="ml-group">Grp H</span><br>New York</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>5 Jul</strong>Sun</div><div class="ml-time">22:00</div><div class="ml-home">Saudi Arabia 🇸🇦</div><div class="ml-score">1 – 0</div><div class="ml-away">🇨🇻 Cape Verde</div><div class="ml-venue"><span class="ml-group">Grp H</span><br>New York</div></div>
+</div>
+
+<!-- DIECISEISAVOS -->
+<div class="phase-title">Round of 32 <span>Jul 5–10, 2026</span></div>
+<div class="match-list">
+  <div class="ml-row"><div class="ml-date"><strong>5 Jul</strong>Sun</div><div class="ml-time">17:00</div><div class="ml-home">Mexico 🇲🇽</div><div class="ml-score">2 – 1</div><div class="ml-away">🇨🇭 Switzerland</div><div class="ml-venue"><span class="ml-ko">R32</span><br>Ciudad de Mexico</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>5 Jul</strong>Sun</div><div class="ml-time">21:00</div><div class="ml-home">Brazil 🇧🇷</div><div class="ml-score">3 – 1</div><div class="ml-away">🇹🇷 Turkey</div><div class="ml-venue"><span class="ml-ko">R32</span><br>Los Angeles</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>6 Jul</strong>Mon</div><div class="ml-time">17:00</div><div class="ml-home">Germany 🇩🇪</div><div class="ml-score">2 – 0</div><div class="ml-away">🇯🇵 Japan</div><div class="ml-venue"><span class="ml-ko">R32</span><br>Atlanta</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>6 Jul</strong>Mon</div><div class="ml-time">21:00</div><div class="ml-home">Belgium 🇧🇪</div><div class="ml-score">2 – 1</div><div class="ml-away">🇺🇾 Uruguay</div><div class="ml-venue"><span class="ml-ko">R32</span><br>Philadelphia</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>7 Jul</strong>Tue</div><div class="ml-time">17:00</div><div class="ml-home">France 🇫🇷</div><div class="ml-score">3 – 0</div><div class="ml-away">🇦🇹 Austria</div><div class="ml-venue"><span class="ml-ko">R32</span><br>Kansas City</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>7 Jul</strong>Tue</div><div class="ml-time">21:00</div><div class="ml-home">Portugal 🇵🇹</div><div class="ml-score">2 – 1</div><div class="ml-away">🇭🇷 Croatia</div><div class="ml-venue"><span class="ml-ko">R32</span><br>Miami</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>8 Jul</strong>Wed</div><div class="ml-time">17:00</div><div class="ml-home">Spain 🇪🇸</div><div class="ml-score">4 – 0</div><div class="ml-away">🇪🇬 Egypt</div><div class="ml-venue"><span class="ml-ko">R32</span><br>New York</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>8 Jul</strong>Wed</div><div class="ml-time">21:00</div><div class="ml-home">Argentina 🇦🇷</div><div class="ml-score">2 – 0</div><div class="ml-away">🇳🇴 Norway</div><div class="ml-venue"><span class="ml-ko">R32</span><br>San Francisco</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>9 Jul</strong>Thu</div><div class="ml-time">17:00</div><div class="ml-home">USA 🇺🇸</div><div class="ml-score">2 – 1</div><div class="ml-away">🇨🇦 Canada</div><div class="ml-venue"><span class="ml-ko">R32</span><br>Dallas</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>9 Jul</strong>Thu</div><div class="ml-time">21:00</div><div class="ml-home">South Korea 🇰🇷</div><div class="ml-score">1 – 0</div><div class="ml-away">🇸🇪 Sweden</div><div class="ml-venue"><span class="ml-ko">R32</span><br>Houston</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>10 Jul</strong>Fri</div><div class="ml-time">17:00</div><div class="ml-home">Colombia 🇨🇴</div><div class="ml-score">2 – 0</div><div class="ml-away">🇿🇦 South Africa</div><div class="ml-venue"><span class="ml-ko">R32</span><br>Atlanta</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>10 Jul</strong>Fri</div><div class="ml-time">21:00</div><div class="ml-home">Australia 🇦🇺</div><div class="ml-score">1 – 1 (pen)</div><div class="ml-away">🇰🇷 South Korea</div><div class="ml-venue"><span class="ml-ko">R32</span><br>Seattle</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>10 Jul</strong>Fri</div><div class="ml-time">14:00</div><div class="ml-home">Morocco 🇲🇦</div><div class="ml-score">1 – 0</div><div class="ml-away">🇸🇳 Senegal</div><div class="ml-venue"><span class="ml-ko">R32</span><br>Boston</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>10 Jul</strong>Fri</div><div class="ml-time">17:00</div><div class="ml-home">Netherlands 🇳🇱</div><div class="ml-score">2 – 1</div><div class="ml-away">🇪🇨 Ecuador</div><div class="ml-venue"><span class="ml-ko">R32</span><br>Portland</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>10 Jul</strong>Fri</div><div class="ml-time">21:00</div><div class="ml-home">England 🏴󠁧󠁢󠁥󠁮󠁧󠁿</div><div class="ml-score">3 – 0</div><div class="ml-away">🇮🇷 Iran</div><div class="ml-venue"><span class="ml-ko">R32</span><br>Dallas</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>11 Jul</strong>Sat</div><div class="ml-time">21:00</div><div class="ml-home">Mexico 🇲🇽</div><div class="ml-score">2 – 0</div><div class="ml-away">🇵🇦 Panama</div><div class="ml-venue"><span class="ml-ko">R32</span><br>Ciudad de Mexico</div></div>
+</div>
+
+<!-- OCTAVOS -->
+<div class="phase-title">Round of 16 <span>Jul 12–14, 2026</span></div>
+<div class="match-list">
+  <div class="ml-row"><div class="ml-date"><strong>12 Jul</strong>Sun</div><div class="ml-time">17:00</div><div class="ml-home">Mexico 🇲🇽</div><div class="ml-score">1 – 1 (pen)</div><div class="ml-away">🇧🇷 Brazil</div><div class="ml-venue"><span class="ml-ko">R16</span><br>Ciudad de Mexico</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>12 Jul</strong>Sun</div><div class="ml-time">21:00</div><div class="ml-home">Germany 🇩🇪</div><div class="ml-score">2 – 0</div><div class="ml-away">🇧🇪 Belgium</div><div class="ml-venue"><span class="ml-ko">R16</span><br>Atlanta</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>13 Jul</strong>Mon</div><div class="ml-time">17:00</div><div class="ml-home">France 🇫🇷</div><div class="ml-score">2 – 1</div><div class="ml-away">🇵🇹 Portugal</div><div class="ml-venue"><span class="ml-ko">R16</span><br>New York</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>13 Jul</strong>Mon</div><div class="ml-time">21:00</div><div class="ml-home">Spain 🇪🇸</div><div class="ml-score">3 – 1</div><div class="ml-away">🇦🇷 Argentina</div><div class="ml-venue"><span class="ml-ko">R16</span><br>Los Angeles</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>14 Jul</strong>Tue</div><div class="ml-time">17:00</div><div class="ml-home">Netherlands 🇳🇱</div><div class="ml-score">2 – 0</div><div class="ml-away">🇺🇸 USA</div><div class="ml-venue"><span class="ml-ko">R16</span><br>Seattle</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>14 Jul</strong>Tue</div><div class="ml-time">21:00</div><div class="ml-home">Morocco 🇲🇦</div><div class="ml-score">1 – 0</div><div class="ml-away">🇨🇴 Colombia</div><div class="ml-venue"><span class="ml-ko">R16</span><br>Miami</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>14 Jul</strong>Tue</div><div class="ml-time">14:00</div><div class="ml-home">England 🏴󠁧󠁢󠁥󠁮󠁧󠁿</div><div class="ml-score">2 – 0</div><div class="ml-away">🇦🇺 Australia</div><div class="ml-venue"><span class="ml-ko">R16</span><br>Dallas</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>15 Jul</strong>Wed</div><div class="ml-time">21:00</div><div class="ml-home">Mexico 🇲🇽</div><div class="ml-score">1 – 0</div><div class="ml-away">🇰🇷 South Korea</div><div class="ml-venue"><span class="ml-ko">R16</span><br>Ciudad de Mexico</div></div>
+</div>
+
+<!-- CUARTOS -->
+<div class="phase-title">Quarterfinals <span>Jul 16–18, 2026</span></div>
+<div class="match-list">
+  <div class="ml-row"><div class="ml-date"><strong>16 Jul</strong>Thu</div><div class="ml-time">18:00</div><div class="ml-home">Mexico 🇲🇽</div><div class="ml-score">2 – 1</div><div class="ml-away">🇩🇪 Germany</div><div class="ml-venue"><span class="ml-ko">QF</span><br>Ciudad de Mexico</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>16 Jul</strong>Thu</div><div class="ml-time">22:00</div><div class="ml-home">Spain 🇪🇸</div><div class="ml-score">2 – 1</div><div class="ml-away">🇫🇷 France</div><div class="ml-venue"><span class="ml-ko">QF</span><br>New York</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>17 Jul</strong>Fri</div><div class="ml-time">18:00</div><div class="ml-home">Netherlands 🇳🇱</div><div class="ml-score">2 – 0</div><div class="ml-away">🇲🇦 Morocco</div><div class="ml-venue"><span class="ml-ko">QF</span><br>Seattle</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>17 Jul</strong>Fri</div><div class="ml-time">22:00</div><div class="ml-home">England 🏴󠁧󠁢󠁥󠁮󠁧󠁿</div><div class="ml-score">1 – 0</div><div class="ml-away">🇲🇽 Mexico</div><div class="ml-venue"><span class="ml-ko">QF</span><br>Dallas</div></div>
+</div>
+
+<!-- SEMIS -->
+<div class="phase-title">Semifinals <span>Jul 20–21, 2026</span></div>
+<div class="match-list">
+  <div class="ml-row"><div class="ml-date"><strong>20 Jul</strong>Mon</div><div class="ml-time">22:00</div><div class="ml-home">Spain 🇪🇸</div><div class="ml-score">2 – 0</div><div class="ml-away">🇲🇽 Mexico</div><div class="ml-venue"><span class="ml-ko">SF</span><br>Los Angeles</div></div>
+  <div class="ml-row"><div class="ml-date"><strong>21 Jul</strong>Tue</div><div class="ml-time">22:00</div><div class="ml-home">Netherlands 🇳🇱</div><div class="ml-score">2 – 1</div><div class="ml-away">🏴󠁧󠁢󠁥󠁮󠁧󠁿 England</div><div class="ml-venue"><span class="ml-ko">SF</span><br>New York</div></div>
+</div>
+
+<!-- FINAL -->
+<div class="phase-title" style="color:var(--gold)">🏆 Final <span style="color:var(--muted)">Jul 26, 2026 · MetLife Stadium, New York</span></div>
+<div class="match-list">
+  <div class="ml-row" style="border-color:rgba(245,197,24,0.4); background:rgba(245,197,24,0.04)">
+    <div class="ml-date"><strong>26 Jul</strong>Sun</div>
+    <div class="ml-time" style="color:var(--gold)">18:00</div>
+    <div class="ml-home" style="color:var(--gold)">Spain 🇪🇸</div>
+    <div class="ml-score" style="color:var(--gold)">2 – 1</div>
+    <div class="ml-away">🇳🇱 Netherlands</div>
+    <div class="ml-venue"><span class="ml-ko">🏆 Final</span><br>New York</div>
+  </div>
+</div>
+
+</div>
+
+<!-- PANEL: PROBABILIDADES -->
+<div class="panel" id="panel-probabilidades">
+  <table class="ranking-table">
+    <thead>
+      <tr>
+        <th>#</th><th>Team</th><th>Elo</th>
+        <th>R32</th><th>R32</th><th>QF</th><th>SF</th><th>Final</th>
+        <th style="min-width:180px">Champion</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td class="rk-num">1</td><td class="rk-name">🇪🇸 Spain<span class="rk-group">H</span></td><td class="rk-elo">2111</td><td>99.2%</td><td>76.0%</td><td>56.4%</td><td>40.7%</td><td>28.5%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:100%"></div></div><span class="pct-num">19.7%</span></div></td></tr>
+      <tr><td class="rk-num">2</td><td class="rk-name">🇦🇷 Argentina<span class="rk-group">J</span></td><td class="rk-elo">2053</td><td>96.3%</td><td>67.7%</td><td>45.4%</td><td>30.2%</td><td>18.7%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:60%"></div></div><span class="pct-num">11.9%</span></div></td></tr>
+      <tr><td class="rk-num">3</td><td class="rk-name">🇫🇷 France<span class="rk-group">I</span></td><td class="rk-elo">2033</td><td>93.5%</td><td>63.6%</td><td>41.8%</td><td>26.1%</td><td>16.2%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:48%"></div></div><span class="pct-num">9.4%</span></div></td></tr>
+      <tr><td class="rk-num">4</td><td class="rk-name">🏴󠁧󠁢󠁥󠁮󠁧󠁿 England<span class="rk-group">L</span></td><td class="rk-elo">1985</td><td>95.5%</td><td>60.4%</td><td>36.6%</td><td>21.9%</td><td>12.1%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:34%"></div></div><span class="pct-num">6.6%</span></div></td></tr>
+      <tr><td class="rk-num">5</td><td class="rk-name">🇵🇹 Portugal<span class="rk-group">K</span></td><td class="rk-elo">1955</td><td>88.0%</td><td>52.7%</td><td>30.2%</td><td>16.6%</td><td>8.6%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:23%"></div></div><span class="pct-num">4.5%</span></div></td></tr>
+      <tr><td class="rk-num">6</td><td class="rk-name">🇲🇦 Morocco<span class="rk-group">C</span></td><td class="rk-elo">1945</td><td>91.4%</td><td>54.1%</td><td>30.7%</td><td>16.6%</td><td>8.6%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:21%"></div></div><span class="pct-num">4.1%</span></div></td></tr>
+      <tr><td class="rk-num">7</td><td class="rk-name">🇩🇪 Germany<span class="rk-group">E</span></td><td class="rk-elo">1943</td><td>94.7%</td><td>55.6%</td><td>31.2%</td><td>16.6%</td><td>8.2%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:20%"></div></div><span class="pct-num">3.9%</span></div></td></tr>
+      <tr><td class="rk-num">8</td><td class="rk-name">🇳🇱 Netherlands<span class="rk-group">F</span></td><td class="rk-elo">1940</td><td>90.0%</td><td>52.5%</td><td>29.5%</td><td>15.4%</td><td>7.7%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:18%"></div></div><span class="pct-num">3.6%</span></div></td></tr>
+      <tr><td class="rk-num">9</td><td class="rk-name">🇪🇨 Ecuador<span class="rk-group">E</span></td><td class="rk-elo">1931</td><td>93.0%</td><td>53.6%</td><td>29.5%</td><td>15.1%</td><td>7.6%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:18%"></div></div><span class="pct-num">3.5%</span></div></td></tr>
+      <tr><td class="rk-num">10</td><td class="rk-name">🇯🇵 Japan<span class="rk-group">F</span></td><td class="rk-elo">1934</td><td>89.9%</td><td>52.9%</td><td>29.4%</td><td>15.7%</td><td>7.6%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:18%"></div></div><span class="pct-num">3.5%</span></div></td></tr>
+      <tr><td class="rk-num">11</td><td class="rk-name">🇧🇷 Brazil<span class="rk-group">C</span></td><td class="rk-elo">1926</td><td>88.9%</td><td>50.4%</td><td>27.3%</td><td>13.6%</td><td>6.5%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:15%"></div></div><span class="pct-num">2.9%</span></div></td></tr>
+      <tr><td class="rk-num">12</td><td class="rk-name">🇨🇴 Colombia<span class="rk-group">K</span></td><td class="rk-elo">1926</td><td>84.7%</td><td>47.4%</td><td>25.6%</td><td>12.8%</td><td>6.4%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:14%"></div></div><span class="pct-num">2.8%</span></div></td></tr>
+      <tr><td class="rk-num">13</td><td class="rk-name">🇭🇷 Croatia<span class="rk-group">L</span></td><td class="rk-elo">1908</td><td>89.2%</td><td>48.7%</td><td>24.7%</td><td>12.2%</td><td>5.8%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:13%"></div></div><span class="pct-num">2.5%</span></div></td></tr>
+      <tr><td class="rk-num">14</td><td class="rk-name">🇲🇽 Mexico<span class="rk-group">A</span></td><td class="rk-elo">1902</td><td>95.9%</td><td>52.3%</td><td>26.0%</td><td>12.5%</td><td>5.6%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:12%"></div></div><span class="pct-num">2.4%</span></div></td></tr>
+      <tr><td class="rk-num">15</td><td class="rk-name">🇹🇷 Turkey<span class="rk-group">D</span></td><td class="rk-elo">1912</td><td>69.3%</td><td>38.1%</td><td>20.1%</td><td>9.9%</td><td>4.4%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:10%"></div></div><span class="pct-num">2.0%</span></div></td></tr>
+      <tr><td class="rk-num">16</td><td class="rk-name">🇳🇴 Norway<span class="rk-group">I</span></td><td class="rk-elo">1888</td><td>73.3%</td><td>38.9%</td><td>19.6%</td><td>9.3%</td><td>4.1%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:9%"></div></div><span class="pct-num">1.8%</span></div></td></tr>
+      <tr><td class="rk-num">17</td><td class="rk-name">🇺🇾 Uruguay<span class="rk-group">H</span></td><td class="rk-elo">1877</td><td>86.2%</td><td>44.7%</td><td>22.1%</td><td>9.7%</td><td>4.2%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:9%"></div></div><span class="pct-num">1.8%</span></div></td></tr>
+      <tr><td class="rk-num">18</td><td class="rk-name">🇨🇭 Switzerland<span class="rk-group">B</span></td><td class="rk-elo">1858</td><td>94.3%</td><td>46.2%</td><td>21.6%</td><td>9.9%</td><td>4.1%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:8%"></div></div><span class="pct-num">1.7%</span></div></td></tr>
+      <tr><td class="rk-num">19</td><td class="rk-name">🇦🇺 Australia<span class="rk-group">D</span></td><td class="rk-elo">1865</td><td>64.7%</td><td>31.6%</td><td>14.7%</td><td>6.7%</td><td>3.0%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:6%"></div></div><span class="pct-num">1.2%</span></div></td></tr>
+      <tr><td class="rk-num">20</td><td class="rk-name">🇧🇪 Belgium<span class="rk-group">G</span></td><td class="rk-elo">1838</td><td>81.8%</td><td>38.5%</td><td>16.4%</td><td>6.8%</td><td>2.7%</td><td><div class="pct-bar"><div class="pct-track"><div class="pct-fill" style="width:5%"></div></div><span class="pct-num">1.1%</span></div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+function showPanel(id, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+}
+</script>
+</body>
+</html>
